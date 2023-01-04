@@ -37,8 +37,8 @@
     <PackageReference Include="SharpZipLib" Version="1.4.1" />
     <PackageReference Include="StackExchange.Redis" Version="2.6.86" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.5" />
-    <PackageReference Include="Trady.Analysis.Fork" Version="3.3.4" />
-    <PackageReference Include="Trady.Core.Fork" Version="3.3.2" />
+    <PackageReference Include="Trady.Analysis" Version="3.2.8" />
+    <PackageReference Include="Trady.Core" Version="3.2.9" />
     <PackageReference Include="Trady.Importer" Version="3.2.0" />
     <PackageReference Include="Trady.Importer.Csv" Version="3.2.0" />
   </ItemGroup>

@@ -254,7 +254,12 @@ namespace CEF.Common.Exchange
         /// Counterparty Liquidation
         /// </summary>
         [Description("Adl")]
-        Adl
+        Adl,
+        /// <summary>
+        /// 无效
+        /// </summary>
+        [Description("Invalid")]
+        Invalid
     }
     #endregion
 

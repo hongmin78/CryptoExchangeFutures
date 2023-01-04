@@ -3,12 +3,14 @@ using Binance.Net.Enums;
 using Binance.Net.Objects;
 using CEF.Common.Extentions;
 using CEF.Common.Primitives;
+using CryptoExchange.Net.Authentication;
 using CryptoExchange.Net.CommonObjects;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NetTopologySuite.Index.HPRtree;
+using NetTopologySuite.Utilities;
 using OfficeOpenXml.Style;
 using StackExchange.Redis;
 using System;
@@ -576,6 +578,31 @@ namespace CEF.Common.Exchange
                 Msg = result.Error?.Message
             };
         }
+         
+        string? _listenKey;
+        async Task KeepAliveUserStreamAsync()
+        {
+            if (!string.IsNullOrEmpty(_listenKey))
+            {
+                var result = await this.Client.UsdFuturesApi.Account.KeepAliveUserStreamAsync(_listenKey);
+                if(!result.Success)
+                    this._logger.LogError($"Binance KeepAliveUserStreamAsync error. {result.Error?.Code} {result.Error?.Message}!");
+            }
+        }
+
+        async Task<string?> GetListenKeyAsync()
+        {
+            if (!string.IsNullOrEmpty(_listenKey)) return _listenKey;
+            var startUserStreamResult = await this.Client.UsdFuturesApi.Account.StartUserStreamAsync();
+            if (startUserStreamResult.Success)
+            {
+                _listenKey = startUserStreamResult.Data;
+                JobHelper.SetIntervalJob(async () => await KeepAliveUserStreamAsync(), TimeSpan.FromMinutes(30)); ;
+            }
+            else
+                this._logger.LogError($"Binance StartUserStreamAsync error, {startUserStreamResult.Error?.Code} {startUserStreamResult.Error?.Message}!");
+            return _listenKey;
+        }
 
         public async Task<CallResult> SubscribeToKlineUpdatesAsync(IEnumerable<string> symbols, IEnumerable<PeriodOption> periods, Action<KlineData> onMessage, CancellationToken ct = default)
         {
@@ -635,8 +662,10 @@ namespace CEF.Common.Exchange
 
         public async Task<CallResult> SubscribeToUserDataUpdatesAsync(Action<MarginUpdate>? onMarginUpdate, Action<AccountUpdateData>? onAccountUpdate, Action<FutureOrder>? onOrderUpdate, CancellationToken ct = default)
         {
+            var listenKey = await this.GetListenKeyAsync();
+            if (string.IsNullOrEmpty(listenKey)) throw new Exception("未能获取listenKey.");
             var result = await this.Ws.UsdFuturesStreams.SubscribeToUserDataUpdatesAsync(
-                APIKEY,
+                listenKey,
                 null,
                 margin =>
                 {

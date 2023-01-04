@@ -51,14 +51,20 @@ namespace CEF.ConsoleApp
             //await CreateFutureAsync("AVAXUSDT");
             //await CreateFutureAsync("FTMUSDT");
             //await CreateFutureAsync("MATICUSDT");
-            //await GetFuturesAsync();
-            await TestGetFuturesInfo();
+            await GetFuturesAsync();
+            //await TestGetFuturesInfo();
         }
 
         private async Task GetFuturesAsync()
         {
             var list = await this._dbAccessor.GetIQueryable<Future>().ToListAsync();
-            Console.WriteLine(list.ToJson());
+            foreach(var item in list)
+            {
+                item.UpdateTime = DateTime.Now.ToLongDateString();
+                item.Size = 0;  
+                item.AbleSize = 0;  
+            }
+            Console.WriteLine("操作成功");
         }
 
         private async Task CreateFutureAsync(string symbol)

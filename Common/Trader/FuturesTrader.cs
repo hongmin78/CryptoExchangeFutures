@@ -12,30 +12,25 @@ using System.Text;
 using System.Threading.Tasks;
 using CEF.Common.Entity;
 using CEF.Common.Extentions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CEF.Common.Trader
 {
     public class FuturesTrader : ITrader, ITransientDependency
     {
         private readonly ILogger<FuturesTrader> _logger;
-        private readonly IServiceProvider _serviceProvider;
-        private readonly IDbAccessor _dbAccessor;
-        private readonly ITrader _trader;
+        private readonly IServiceProvider _serviceProvider; 
         private readonly IEnumerable<IStrategy> _strategyList;
         private readonly IExchange _exchange;
         private readonly IMemoryCache _memoryCache;
         public FuturesTrader(IServiceProvider serviceProvider,
-                            ITrader trader,
-                            ILogger<FuturesTrader> logger,
-                            IDbAccessor dbAccessor,
+                            ILogger<FuturesTrader> logger, 
                             IExchange exchange,
                             IEnumerable<IStrategy> strategyList,
                             IMemoryCache memoryCache)
         {
             _serviceProvider = serviceProvider;
-            _trader = trader;
-            _logger = logger;
-            _dbAccessor = dbAccessor;
+            _logger = logger; 
             _strategyList = strategyList;
             _exchange = exchange;
             _memoryCache = memoryCache;
@@ -44,58 +39,69 @@ namespace CEF.Common.Trader
 
         public async Task ClosePositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null)
         {
-            var callResult = await this._exchange.ClosePositionAsync(symbol, orderType, side, quantity, price, IdHelper.GetId());
-            if (callResult.Success)
+            using var scope = this._serviceProvider.CreateScope();
+            var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
+            var order = new Order()
             {
-                var order = new Order()
+                Id = IdHelper.GetLongId(),
+                AvgPrice = null,
+                ClientOrderId = IdHelper.GetId(),
+                CreateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff"),
+                Side = (side switch
                 {
-                    Id = callResult.Data.Id,
-                    AvgPrice = callResult.Data?.AvgPrice,
-                    ClientOrderId = callResult.Data?.ClientOrderId,
-                    CreateTime = callResult.Data?.CreateTime.ToString("yyyy-MM-dd HH:mm:ss fff"),
-                    Side = callResult.Data?.Side.GetDescription(),
-                    PositionSide = callResult.Data?.PositionSide.GetDescription(),
-                    Price = callResult.Data?.Price,
-                    Quantity = callResult.Data.Quantity,
-                    Status = callResult.Data?.Status.GetDescription(),
-                    Symbol = callResult.Data?.Symbol,
-                    Type = callResult.Data?.Type.GetDescription(),
-                    UpdateTime = callResult.Data?.UpdateTime.ToString("yyyy-MM-dd HH:mm:ss fff"),
-                    OrderSide = "Close"
-                };
-                await this._dbAccessor.InsertAsync(order);
+                    PositionSide.Short => Binance.Net.Enums.OrderSide.Buy,
+                    PositionSide.Long => Binance.Net.Enums.OrderSide.Sell,
+                    _ => throw new NotSupportedException($"不支持类型{side},且仅可选择 LONG 或 SHORT"),
+                }).GetDescription(),
+                PositionSide = side.GetDescription(),
+                Price = price,
+                Quantity = quantity.Value,
+                Status = OrderStatus.New.GetDescription(),
+                Symbol = symbol,
+                Type = orderType.GetDescription(),
+                UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff"),
+                OrderSide = "Close"
+            };
+            await dbAccessor.InsertAsync(order);
+            var callResult = await this._exchange.ClosePositionAsync(symbol, orderType, side, quantity, price, order.ClientOrderId);
+            if (callResult.Success)
+
                 this._logger.LogInformation($"平仓 {symbol}/{orderType.GetDescription()}/{side.GetDescription()}/{quantity}/{price}");
-            }
             else
-                this._logger.LogError($"平仓失败. errorcode:{callResult.ErrorCode}, message:{callResult.Msg}, 参数:{symbol}/{orderType}/{side}/{quantity}/{price}");           
+                this._logger.LogError($"平仓失败. errorcode:{callResult.ErrorCode}, message:{callResult.Msg}, 参数:{symbol}/{orderType}/{side}/{quantity}/{price}");
         }
 
         public async Task OpenPositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null)
         {
-            var callResult = await this._exchange.OpenPositionAsync(symbol, orderType, side, quantity, price, IdHelper.GetId());
-            if (callResult.Success)
+            using var scope = this._serviceProvider.CreateScope();
+            var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
+            var order = new Order()
             {
-                var order = new Order()
+                Id = IdHelper.GetLongId(),
+                AvgPrice = null,
+                ClientOrderId = IdHelper.GetId(),
+                CreateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff"),
+                Side = (side switch
                 {
-                    Id = callResult.Data.Id,
-                    AvgPrice = callResult.Data?.AvgPrice,
-                    ClientOrderId = callResult.Data?.ClientOrderId,
-                    CreateTime = callResult.Data?.CreateTime.ToString("yyyy-MM-dd HH:mm:ss fff"),
-                    Side = callResult.Data?.Side.GetDescription(),
-                    PositionSide = callResult.Data?.PositionSide.GetDescription(),
-                    Price = callResult.Data?.Price,
-                    Quantity = callResult.Data.Quantity,
-                    Status = callResult.Data?.Status.GetDescription(),
-                    Symbol = callResult.Data?.Symbol,
-                    Type = callResult.Data?.Type.GetDescription(),
-                    UpdateTime = callResult.Data?.UpdateTime.ToString("yyyy-MM-dd HH:mm:ss fff"),
-                    OrderSide = "Open"
-                };
-                await this._dbAccessor.InsertAsync(order);
+                    PositionSide.Short => Binance.Net.Enums.OrderSide.Sell,
+                    PositionSide.Long => Binance.Net.Enums.OrderSide.Buy,
+                    _ => throw new NotSupportedException($"不支持类型{side},且仅可选择 LONG 或 SHORT"),
+                }).GetDescription(),
+                PositionSide = side.GetDescription(),
+                Price = price,
+                Quantity = quantity.Value,
+                Status = OrderStatus.New.GetDescription(),
+                Symbol = symbol,
+                Type = orderType.GetDescription(),
+                UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff"),
+                OrderSide = "Open"
+            };
+            await dbAccessor.InsertAsync(order);
+            var callResult = await this._exchange.OpenPositionAsync(symbol, orderType, side, quantity, price, order.ClientOrderId);
+            if (callResult.Success)
                 this._logger.LogInformation($"开仓 {symbol}/{orderType.GetDescription()}/{side.GetDescription()}/{quantity}/{price}");
-            }
             else
                 this._logger.LogError($"开仓失败. errorcode:{callResult.ErrorCode}, message:{callResult.Msg}, 参数:{symbol}/{orderType}/{side}/{quantity}/{price}");
-        } 
+        }
     }
 }

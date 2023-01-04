@@ -32,22 +32,22 @@ internal class HostService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var symbols = new List<string>() { "BTCUSDT", "ETHUSDT", "BCHUSDT", "XRPUSDT", "LTCUSDT", "LINKUSDT", "ATOMUSDT", "DOGEUSDT", "UNIUUSDT", "AVAXUSDT", "FTMUSDT", "MATICUSDT" }; 
-        await this._context.ExecuteAsync(symbols, stoppingToken);
-
-        //while (!stoppingToken.IsCancellationRequested)
-        //{
-        //    try
-        //    {
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        this._logger.LogError(e, e.Message);
-        //    }
-        //    finally
-        //    {
-        //        await Task.Delay(TimeSpan.FromMilliseconds(10));
-        //    }
-        //}
+        var symbols = new List<string>() { "BTCUSDT", "ETHUSDT", "BCHUSDT", "XRPUSDT", "LTCUSDT", "LINKUSDT", "ATOMUSDT", "DOGEUSDT", "UNIUSDT", "AVAXUSDT", "FTMUSDT", "MATICUSDT" }; 
+        await this._context.ExecuteAsync(symbols, stoppingToken); 
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                await this._context.SyncExchangeDataAsync();
+            }
+            catch (Exception e)
+            {
+                this._logger.LogError(e, e.Message);
+            }
+            finally
+            {
+                await Task.Delay(TimeSpan.FromSeconds(30));
+            }
+        }
     }
 }
