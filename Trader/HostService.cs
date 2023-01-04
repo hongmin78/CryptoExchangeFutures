@@ -46,7 +46,7 @@ internal class HostService : BackgroundService
             }
             finally
             {
-                await Task.Delay(TimeSpan.FromSeconds(30));
+                await Task.Delay(TimeSpan.FromSeconds(15));
             }
         }
     }
