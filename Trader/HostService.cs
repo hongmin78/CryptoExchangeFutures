@@ -33,7 +33,7 @@ internal class HostService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var symbols = new List<string>() { "BTCUSDT", "ETHUSDT", "BCHUSDT", "XRPUSDT", "LTCUSDT", "LINKUSDT", "ATOMUSDT", "DOGEUSDT", "UNIUSDT", "AVAXUSDT", "FTMUSDT", "MATICUSDT" }; 
-        await this._context.ExecuteAsync(symbols, stoppingToken); 
+        this._context.ExecuteAsync(symbols, stoppingToken); 
         while (!stoppingToken.IsCancellationRequested)
         {
             try

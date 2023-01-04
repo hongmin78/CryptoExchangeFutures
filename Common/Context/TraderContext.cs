@@ -313,6 +313,15 @@ namespace CEF.Common.Context
                     dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                     dbOrder.Status = OrderStatus.Invalid.GetDescription();
                     await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status" });
+                    var future = futures.FirstOrDefault(x => x.Symbol == dbOrder.Symbol && x.Status != FutureStatus.None);
+                    if (future != null)
+                    {
+                        future.Status = FutureStatus.None;
+                        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                        await this.UpdateFutureAsync(future, new List<string>() {                               
+                                "Status",
+                                "UpdateTime" });
+                    } 
                     continue;
                 }
                 var order = orderResult.Data;
@@ -326,7 +335,7 @@ namespace CEF.Common.Context
                     if (future == null)
                     {
                         this._logger.LogError($"未发现合约配置{order.Symbol}/{order.PositionSide.GetDescription()}");
-                        return;
+                        continue;
                     }
                     if (future.Status == FutureStatus.Openning)
                     {
