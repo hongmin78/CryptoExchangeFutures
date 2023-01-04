@@ -18,14 +18,14 @@ namespace CEF.Common.Exchange
         Task<CallResult> SubscribeToUserDataUpdatesAsync(
             Action<MarginUpdate>? onMarginUpdate,
             Action<AccountUpdateData>? onAccountUpdate,
-            Action<Order>? onOrderUpdate,
+            Action<FutureOrder>? onOrderUpdate,
             CancellationToken ct = default);
 
         Task<CallResult<IEnumerable<FutureInfo>>> GetSymbolsAsync();
 
         Task<CallResult<IEnumerable<PositionDetail>>> GetPositionInformationAsync();
 
-        Task<CallResult<IEnumerable<Balance>>> GetBalanceAsync();
+        Task<CallResult<IEnumerable<FutureBalance>>> GetBalanceAsync();
 
         Task<CallResult<IEnumerable<IOhlcv>>> GetKlineDataAsync(
             string symbol, 
@@ -39,16 +39,16 @@ namespace CEF.Common.Exchange
             long? orderId = null, 
             string? origClientOrderId = null);
 
-        Task<CallResult<IEnumerable<Order>>> GetOpenOrdersAsync(string? symbol = null);
+        Task<CallResult<IEnumerable<FutureOrder>>> GetOpenOrdersAsync(string? symbol = null);
 
-        Task<CallResult<Order>> GetOrderAsync(
+        Task<CallResult<FutureOrder>> GetOrderAsync(
             string symbol, 
             long? orderId = null, 
             string? origClientOrderId = null);
 
-        Task<CallResult<Order>> OpenPositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null, string? newClientOrderId = null);
+        Task<CallResult<FutureOrder>> OpenPositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null, string? newClientOrderId = null);
 
-        Task<CallResult<Order>> ClosePositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null, string? newClientOrderId = null);
+        Task<CallResult<FutureOrder>> ClosePositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null, string? newClientOrderId = null);
     }
 
     #region enum
@@ -68,34 +68,42 @@ namespace CEF.Common.Exchange
         /// <summary>
         /// Limit orders will be placed at a specific price. If the price isn't available in the order book for that asset the order will be added in the order book for someone to fill.
         /// </summary>
+        [Description("Limit")]
         Limit,
         /// <summary>
         /// Market order will be placed without a price. The order will be executed at the best price available at that time in the order book.
         /// </summary>
+        [Description("Market")]
         Market,
         /// <summary>
         /// Stop order. Execute a limit order when price reaches a specific Stop price
         /// </summary>
+        [Description("Stop")]
         Stop,
         /// <summary>
         /// Stop market order. Execute a market order when price reaches a specific Stop price
         /// </summary>
+        [Description("StopMarket")]
         StopMarket,
         /// <summary>
         /// Take profit order. Will execute a limit order when the price rises above a price to sell and therefor take a profit
         /// </summary>
+        [Description("TakeProfit")]
         TakeProfit,
         /// <summary>
         /// Take profit market order. Will execute a market order when the price rises above a price to sell and therefor take a profit
         /// </summary>
+        [Description("TakeProfitMarket")]
         TakeProfitMarket,
         /// <summary>
         /// A trailing stop order will execute an order when the price drops below a certain percentage from its all time high since the order was activated
         /// </summary>
+        [Description("TrailingStopMarket")]
         TrailingStopMarket,
         /// <summary>
         /// A liquidation order
         /// </summary>
+        [Description("Liquidation")]
         Liquidation
     }
     public enum OrderSide
@@ -103,10 +111,12 @@ namespace CEF.Common.Exchange
         /// <summary>
         /// Buy
         /// </summary>
+        [Description("Buy")]
         Buy,
         /// <summary>
         /// Sell
         /// </summary>
+        [Description("Sell")]
         Sell
     }
     public enum SpotExchange
@@ -122,11 +132,14 @@ namespace CEF.Common.Exchange
         /// <summary>
         /// Short
         /// </summary>
+        [Description("Short")]
         Short,
         /// <summary>
         /// Long
         /// </summary>
+        [Description("Long")]
         Long,
+        [Description("Both")]
         Both
     }
     public enum MarginType
@@ -200,38 +213,47 @@ namespace CEF.Common.Exchange
         /// <summary>
         /// Order is new
         /// </summary>
+        [Description("New")]
         New,
         /// <summary>
         /// Order is partly filled, still has quantity left to fill
         /// </summary>
+        [Description("PartiallyFilled")]
         PartiallyFilled,
         /// <summary>
         /// The order has been filled and completed
         /// </summary>
+        [Description("Filled")]
         Filled,
         /// <summary>
         /// The order has been canceled
         /// </summary>
+        [Description("Canceled")]
         Canceled,
         /// <summary>
         /// The order is in the process of being canceled  (currently unused)
         /// </summary>
+        [Description("PendingCancel")]
         PendingCancel,
         /// <summary>
         /// The order has been rejected
         /// </summary>
+        [Description("Rejected")]
         Rejected,
         /// <summary>
         /// The order has expired
         /// </summary>
+        [Description("Expired")]
         Expired,
         /// <summary>
         /// Liquidation with Insurance Fund
         /// </summary>
+        [Description("Insurance")]
         Insurance,
         /// <summary>
         /// Counterparty Liquidation
         /// </summary>
+        [Description("Adl")]
         Adl
     }
     #endregion
@@ -351,12 +373,12 @@ namespace CEF.Common.Exchange
 
     public class AccountUpdateData
     {
-        public IEnumerable<Balance> Balances { get; set; } = Array.Empty<Balance>();
+        public IEnumerable<FutureBalance> Balances { get; set; } = Array.Empty<FutureBalance>();
 
         public IEnumerable<PositionDetail> Positions { get; set; } = Array.Empty<PositionDetail>();
     }
 
-    public class Balance
+    public class FutureBalance
     {
         /// <summary>
         /// The asset this balance is for
@@ -381,7 +403,7 @@ namespace CEF.Common.Exchange
         public bool? MarginAvailable { get; set; }
     }
        
-    public class Order
+    public class FutureOrder
     {
         /// <summary>
         /// The symbol the order is for

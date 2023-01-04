@@ -38,5 +38,7 @@ namespace CEF.Common.Entity
         public string CreateTime { set; get; }
 
         public string UpdateTime { set; get; }
+
+        public string Side { set; get; }
     }
 }

@@ -22,7 +22,7 @@ var builder = Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder(args)
                    services.AddAutoMapper();
                    services.AddEFCoreSharding(config =>
                    {
-                       var connectionString = "DataSource=G:\\Git\\QuantitativeTrading\\CryptoExchangeFutures\\Trader\\trade.db";
+                       var connectionString = "DataSource=G:\\Git\\QuantitativeTrading\\Code\\Trader\\trade.db";
                        config.UseDatabase(connectionString, DatabaseType.SQLite);
                        config.SetEntityAssemblies(GlobalConfigure.AllAssemblies);
                        config.CreateShardingTableOnStarting(false);

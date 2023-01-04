@@ -51,7 +51,8 @@ namespace CEF.ConsoleApp
             //await CreateFutureAsync("AVAXUSDT");
             //await CreateFutureAsync("FTMUSDT");
             //await CreateFutureAsync("MATICUSDT");
-            await GetFuturesAsync();
+            //await GetFuturesAsync();
+            await TestGetFuturesInfo();
         }
 
         private async Task GetFuturesAsync()

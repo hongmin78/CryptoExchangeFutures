@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CEF.Common.Exchange;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,10 +8,10 @@ using System.Threading.Tasks;
 namespace CEF.Common.Trader
 {
     public interface ITrader
-    { 
+    {
 
-        void Buy(string symbol, decimal amount, decimal price);
+        Task OpenPositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null);
 
-        void Sell(string symbol, decimal amount, decimal price);
+        Task ClosePositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null);
     }
 }

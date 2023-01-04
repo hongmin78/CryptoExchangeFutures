@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
@@ -65,5 +66,17 @@ namespace CEF.Common.Entity
         public int OrdersCount { set; get; }
 
         public int IsEnabled { set; get; }
+
+        public FutureStatus Status { set; get; }
+    }
+
+    public enum FutureStatus
+    {
+        [Description("无")]
+        None,
+        [Description("开仓中")]
+        Openning,
+        [Description("平仓中")]
+        Closing
     }
 }

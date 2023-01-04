@@ -110,10 +110,10 @@ namespace CEF.Common.Exchange
             return new CallResult() { Success = result.Success, ErrorCode = result.Error?.Code, Msg = result.Error?.Message };
         }
 
-        public async Task<CallResult<IEnumerable<Balance>>> GetBalanceAsync()
+        public async Task<CallResult<IEnumerable<FutureBalance>>> GetBalanceAsync()
         {
             var result = await this.Client.UsdFuturesApi.Account.GetBalancesAsync();
-            var balances = result.Data?.Select(x => new Balance()
+            var balances = result.Data?.Select(x => new FutureBalance()
             {
                 Asset = x.Asset,
                 AvailableBalance = x.AvailableBalance,
@@ -122,7 +122,7 @@ namespace CEF.Common.Exchange
                 MarginAvailable = x.MarginAvailable,
                 WalletBalance = x.WalletBalance,
             });
-            return new CallResult<IEnumerable<Balance>>()
+            return new CallResult<IEnumerable<FutureBalance>>()
             {
                 Success = result.Success,
                 Data = balances,
@@ -155,10 +155,10 @@ namespace CEF.Common.Exchange
             };
         }
 
-        public async Task<CallResult<IEnumerable<Order>>> GetOpenOrdersAsync(string? symbol = null)
+        public async Task<CallResult<IEnumerable<FutureOrder>>> GetOpenOrdersAsync(string? symbol = null)
         {
             var result = await this.Client.UsdFuturesApi.Trading.GetOpenOrdersAsync(symbol);
-            var balances = result.Data?.Select(x => new Order()
+            var balances = result.Data?.Select(x => new FutureOrder()
             {
                 AvgPrice = x.AvgPrice,
                 ClientOrderId = x.ClientOrderId,
@@ -223,7 +223,7 @@ namespace CEF.Common.Exchange
                 Pair = x.Pair,
                 QuoteQuantityFilled = x.QuoteQuantityFilled,
             });
-            return new CallResult<IEnumerable<Order>>()
+            return new CallResult<IEnumerable<FutureOrder>>()
             {
                 Success = result.Success,
                 Data = balances,
@@ -232,13 +232,13 @@ namespace CEF.Common.Exchange
             };
         }
 
-        public async Task<CallResult<Order>> GetOrderAsync(string symbol, long? orderId = null, string? origClientOrderId = null)
+        public async Task<CallResult<FutureOrder>> GetOrderAsync(string symbol, long? orderId = null, string? origClientOrderId = null)
         {
             var result = await this.Client.UsdFuturesApi.Trading.GetOrderAsync(symbol, orderId, origClientOrderId);
-            return new CallResult<Order>()
+            return new CallResult<FutureOrder>()
             {
                 Success = result.Success,
-                Data = !result.Success ? null : new Order()
+                Data = !result.Success ? null : new FutureOrder()
                 {
                     AvgPrice = result.Data.AvgPrice,
                     ClientOrderId = result.Data.ClientOrderId,
@@ -345,11 +345,11 @@ namespace CEF.Common.Exchange
             };
         }
 
-        public async Task<CallResult<Order>> OpenPositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null, string? newClientOrderId = null)
+        public async Task<CallResult<FutureOrder>> OpenPositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null, string? newClientOrderId = null)
         {
             var positionModeResult = await this.Client.UsdFuturesApi.Account.GetPositionModeAsync();
             if (!positionModeResult.Success)
-                new CallResult<Order>()
+                new CallResult<FutureOrder>()
                 {
                     Success = positionModeResult.Success,
                     ErrorCode = positionModeResult.Error?.Code,
@@ -388,10 +388,10 @@ namespace CEF.Common.Exchange
                 dualSidePosition ? null : false,
                 newClientOrderId);
 
-            return new CallResult<Order>()
+            return new CallResult<FutureOrder>()
             {
                 Success = result.Success,
-                Data = !result.Success ? null : new Order()
+                Data = !result.Success ? null : new FutureOrder()
                 {
                     AvgPrice = result.Data.AveragePrice,
                     ClientOrderId = result.Data.ClientOrderId,
@@ -460,11 +460,12 @@ namespace CEF.Common.Exchange
                 Msg = result.Error?.Message
             };
         }
-        public async Task<CallResult<Order>> ClosePositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null, string? newClientOrderId = null)
+       
+        public async Task<CallResult<FutureOrder>> ClosePositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null, string? newClientOrderId = null)
         {
             var positionModeResult = await this.Client.UsdFuturesApi.Account.GetPositionModeAsync();
             if (!positionModeResult.Success)
-                new CallResult<Order>()
+                new CallResult<FutureOrder>()
                 {
                     Success = positionModeResult.Success,
                     ErrorCode = positionModeResult.Error?.Code,
@@ -503,10 +504,10 @@ namespace CEF.Common.Exchange
                 dualSidePosition ? null : true,
                 newClientOrderId);
 
-            return new CallResult<Order>()
+            return new CallResult<FutureOrder>()
             {
                 Success = result.Success,
-                Data = !result.Success ? null : new Order()
+                Data = !result.Success ? null : new FutureOrder()
                 {
                     AvgPrice = result.Data.AveragePrice,
                     ClientOrderId = result.Data.ClientOrderId,
@@ -632,7 +633,7 @@ namespace CEF.Common.Exchange
             return new CallResult() { Success = result.Success, ErrorCode = result.Error?.Code, Msg = result.Error?.Message };
         }
 
-        public async Task<CallResult> SubscribeToUserDataUpdatesAsync(Action<MarginUpdate>? onMarginUpdate, Action<AccountUpdateData>? onAccountUpdate, Action<Order>? onOrderUpdate, CancellationToken ct = default)
+        public async Task<CallResult> SubscribeToUserDataUpdatesAsync(Action<MarginUpdate>? onMarginUpdate, Action<AccountUpdateData>? onAccountUpdate, Action<FutureOrder>? onOrderUpdate, CancellationToken ct = default)
         {
             var result = await this.Ws.UsdFuturesStreams.SubscribeToUserDataUpdatesAsync(
                 APIKEY,
@@ -671,7 +672,7 @@ namespace CEF.Common.Exchange
                 {
                     onAccountUpdate?.Invoke(new AccountUpdateData()
                     {
-                        Balances = account.Data.UpdateData.Balances.Select(x => new Balance()
+                        Balances = account.Data.UpdateData.Balances.Select(x => new FutureBalance()
                         {
                             Asset = x.Asset,
                             WalletBalance = x.WalletBalance,
@@ -703,7 +704,7 @@ namespace CEF.Common.Exchange
                 },
                 order =>
                 {
-                    onOrderUpdate?.Invoke(new Order()
+                    onOrderUpdate?.Invoke(new FutureOrder()
                     {
                         Id = order.Data.UpdateData.OrderId,
                         AvgPrice = order.Data.UpdateData.AveragePrice,

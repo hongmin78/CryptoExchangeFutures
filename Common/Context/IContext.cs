@@ -8,6 +8,6 @@ namespace CEF.Common.Context
 {
     public interface IContext
     {
-        Task ExecuteAsync();
+        Task ExecuteAsync(IEnumerable<string> symbols, CancellationToken ct = default);
     }
 }
