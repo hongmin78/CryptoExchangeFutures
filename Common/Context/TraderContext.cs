@@ -306,7 +306,7 @@ namespace CEF.Common.Context
             var dbOrders = await dbAccessor.GetIQueryable<Entity.Order>().Where(x => x.Status != OrderStatus.Filled.GetDescription() && x.Status != OrderStatus.Invalid.GetDescription()).ToListAsync();
             foreach (var dbOrder in dbOrders)
             {
-                if (DateTime.Now.Subtract(DateTime.Parse(dbOrder.CreateTime)).TotalSeconds < 5)
+                if (DateTime.Now.Subtract(Convert.ToDateTime(dbOrder.CreateTime)).TotalSeconds < 5)
                     continue;
                 var orderResult = await this._exchange.GetOrderAsync(dbOrder.Symbol, null, dbOrder.ClientOrderId);
                 if (!orderResult.Success)
