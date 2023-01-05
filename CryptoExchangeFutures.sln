@@ -11,7 +11,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CEF.Backtest", "Backtest\CE
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CEF.UnitTests", "CEF.UnitTests\CEF.UnitTests.csproj", "{2AD77C6F-56AD-48E9-BFAD-226187F38AD0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CEF.ConsoleApp", "CEF.ConsoleApp\CEF.ConsoleApp.csproj", "{210AB3C7-5DB2-499D-B475-3A4C4458A4E1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CEF.ConsoleApp", "CEF.ConsoleApp\CEF.ConsoleApp.csproj", "{210AB3C7-5DB2-499D-B475-3A4C4458A4E1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "thirdLibrary", "thirdLibrary", "{3FA01FFC-40E6-4827-B285-339B27231E6C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.Sharding", "thirdLibrary\EFCore.Sharding\EFCore.Sharding.csproj", "{0615101E-7047-4C09-85AF-920522AA561C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.Sharding.SQLite", "thirdLibrary\EFCore.Sharding.SQLite\EFCore.Sharding.SQLite.csproj", "{4F5A94AB-F554-4C96-BFE7-0556426FF985}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,9 +45,21 @@ Global
 		{210AB3C7-5DB2-499D-B475-3A4C4458A4E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{210AB3C7-5DB2-499D-B475-3A4C4458A4E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{210AB3C7-5DB2-499D-B475-3A4C4458A4E1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0615101E-7047-4C09-85AF-920522AA561C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0615101E-7047-4C09-85AF-920522AA561C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0615101E-7047-4C09-85AF-920522AA561C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0615101E-7047-4C09-85AF-920522AA561C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F5A94AB-F554-4C96-BFE7-0556426FF985}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F5A94AB-F554-4C96-BFE7-0556426FF985}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F5A94AB-F554-4C96-BFE7-0556426FF985}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F5A94AB-F554-4C96-BFE7-0556426FF985}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0615101E-7047-4C09-85AF-920522AA561C} = {3FA01FFC-40E6-4827-B285-339B27231E6C}
+		{4F5A94AB-F554-4C96-BFE7-0556426FF985} = {3FA01FFC-40E6-4827-B285-339B27231E6C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4F11817E-AE38-4723-965D-B99C555D248D}
