@@ -51,8 +51,11 @@ namespace CEF.ConsoleApp
             //await CreateFutureAsync("AVAXUSDT");
             //await CreateFutureAsync("FTMUSDT");
             //await CreateFutureAsync("MATICUSDT");
-            await GetFuturesAsync();
+            //await GetFuturesAsync();
             //await TestGetFuturesInfo();
+
+            var orderResult = await this._exchange.GetOrderAsync("DOGEUSDT", null, "1610885603530903553");
+            Console.WriteLine(orderResult.ToJson());
         }
 
         private async Task GetFuturesAsync()
