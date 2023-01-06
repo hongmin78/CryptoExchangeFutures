@@ -76,18 +76,18 @@ namespace CEF.Common.Context
                                 {
                                     var quantity = amount / per15MinuteKlineIC.Close;
                                     var multiple = Convert.ToInt32(quantity / futureInfo.MinTradeQuantity);
-                                    quantity = (multiple + 1) * futureInfo.MinTradeQuantity;
-                                    await this._trader.OpenPositionAsync(symbol, orderType, positionSide, quantity, null);
+                                    quantity = (multiple + 1) * futureInfo.MinTradeQuantity;                                    
                                     future.Status = FutureStatus.Openning;
                                     future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                                     await this.UpdateFutureAsync(future, new List<string>() { "Status", "UpdateTime" });
+                                    await this._trader.OpenPositionAsync(symbol, orderType, positionSide, quantity, null);
                                 },
                                 async (symbol, orderType, positionSide, quantity) =>
-                                {
-                                    await this._trader.ClosePositionAsync(symbol, orderType, positionSide, quantity, null);
+                                {                                    
                                     future.Status = FutureStatus.Closing;
                                     future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                                     await this.UpdateFutureAsync(future, new List<string>() { "Status", "UpdateTime" });
+                                    await this._trader.ClosePositionAsync(symbol, orderType, positionSide, quantity, null);
                                 });
                         }
                     }//);
