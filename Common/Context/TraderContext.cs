@@ -149,7 +149,7 @@ namespace CEF.Common.Context
                 async order =>
                 {
                     using var scope = this._serviceProvider.CreateScope();
-                    var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
+                    using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
                     var dbOrder = await dbAccessor.GetIQueryable<Entity.Order>().FirstOrDefaultAsync(x=>x.ClientOrderId == order.ClientOrderId);
                     if (dbOrder == null)
                     {
@@ -283,7 +283,7 @@ namespace CEF.Common.Context
             var result = await this._memoryCache.GetOrSetObjectAsync<IEnumerable<Future>>(futuresMemoryKey, async () =>
             {
                 using var scope = this._serviceProvider.CreateScope();
-                var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
+                using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
                 var futures = await dbAccessor.GetIQueryable<Future>().ToListAsync();
                 return futures;
             }, new MemoryCacheEntryOptions() { SlidingExpiration = TimeSpan.FromDays(30) });
@@ -293,7 +293,7 @@ namespace CEF.Common.Context
         async Task UpdateFutureAsync(Future future, List<string> properties)
         {
             using var scope = this._serviceProvider.CreateScope();
-            var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
+            using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
             await dbAccessor.UpdateAsync(future, properties);
             this._memoryCache.Remove(futuresMemoryKey);
         }
