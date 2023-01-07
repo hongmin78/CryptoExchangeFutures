@@ -106,7 +106,7 @@ namespace CEF.Common.Context
         private async Task<Future> CreateFutureAsync(string symbol, PositionSide side)
         {
             using var scope = this._serviceProvider.CreateScope();
-            var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
+            using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
             var entity = new Future()
             {
                 Symbol = symbol,
@@ -301,7 +301,7 @@ namespace CEF.Common.Context
         public async Task SyncExchangeDataAsync()
         {
             using var scope = this._serviceProvider.CreateScope();
-            var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
+            using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
             var futures = await this.GetFuturesAsync();
             var dbOrders = await dbAccessor.GetIQueryable<Entity.Order>().Where(x => x.Status != OrderStatus.Filled.GetDescription() && x.Status != OrderStatus.Invalid.GetDescription()).ToListAsync();
             foreach (var dbOrder in dbOrders)

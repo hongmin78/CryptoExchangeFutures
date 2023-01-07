@@ -40,7 +40,7 @@ namespace CEF.Common.Trader
         public async Task ClosePositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null)
         {
             using var scope = this._serviceProvider.CreateScope();
-            var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
+            using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
             var order = new Order()
             {
                 Id = IdHelper.GetLongId(),
@@ -74,7 +74,7 @@ namespace CEF.Common.Trader
         public async Task OpenPositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null)
         {
             using var scope = this._serviceProvider.CreateScope();
-            var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
+            using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
             var order = new Order()
             {
                 Id = IdHelper.GetLongId(),
