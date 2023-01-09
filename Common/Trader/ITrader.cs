@@ -10,8 +10,8 @@ namespace CEF.Common.Trader
     public interface ITrader
     {
 
-        Task OpenPositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null);
+        Task OpenPositionAsync(long futureId, string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null);
 
-        Task ClosePositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null);
+        Task ClosePositionAsync(long futureId, string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null);
     }
 }

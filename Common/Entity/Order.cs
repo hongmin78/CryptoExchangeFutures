@@ -40,5 +40,7 @@ namespace CEF.Common.Entity
         public string UpdateTime { set; get; }
 
         public string Side { set; get; }
+
+        public long? FutureId { set; get; }
     }
 }

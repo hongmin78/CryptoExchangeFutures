@@ -61,9 +61,10 @@ namespace CEF.Common.Context
                         }
                         foreach (var strategy in this._strategyList)
                         {
-                            var future = futures.FirstOrDefault(x => x.Symbol == symbol && x.PositionSide == (int)strategy.Side);
+                            var future = futures.FirstOrDefault(x => x.Symbol == symbol && x.PositionSide == (int)strategy.Side && x.Status == FutureStatus.None);
                             if (future == null)
-                                future = await CreateFutureAsync(symbol, strategy.Side);
+                                continue;
+                                //future = await CreateFutureAsync(symbol, strategy.Side);
                             var per15MinuteKlines = await this.GetKlineData(symbol, PeriodOption.Per15Minute);
                             var fourHourlyKlines = await this.GetKlineData(symbol, PeriodOption.FourHourly);
                             var per15MinuteKlineIC = IndexedObjectConstructor(per15MinuteKlines, per15MinuteKlines.Count() - 1);
@@ -80,14 +81,14 @@ namespace CEF.Common.Context
                                     future.Status = FutureStatus.Openning;
                                     future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                                     await this.UpdateFutureAsync(future, new List<string>() { "Status", "UpdateTime" });
-                                    await this._trader.OpenPositionAsync(symbol, orderType, positionSide, quantity, null);
+                                    await this._trader.OpenPositionAsync(future.Id, symbol, orderType, positionSide, quantity, null);
                                 },
                                 async (symbol, orderType, positionSide, quantity) =>
                                 {                                    
                                     future.Status = FutureStatus.Closing;
                                     future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                                     await this.UpdateFutureAsync(future, new List<string>() { "Status", "UpdateTime" });
-                                    await this._trader.ClosePositionAsync(symbol, orderType, positionSide, quantity, null);
+                                    await this._trader.ClosePositionAsync(future.Id, symbol, orderType, positionSide, quantity, null);
                                 });
                         }
                     }//);
@@ -164,7 +165,7 @@ namespace CEF.Common.Context
                     if (order.Status == OrderStatus.Filled)
                     {
                         var futures = await this.GetFuturesAsync();
-                        var future = futures.FirstOrDefault(x => x.Symbol == order.Symbol && x.PositionSide == (int)order.PositionSide);
+                        var future = futures.FirstOrDefault(x => x.Symbol == order.Symbol && x.PositionSide == (int)order.PositionSide && x.Id == dbOrder.FutureId);
                         if (future == null)
                         {
                             this._logger.LogError($"未发现合约配置{order.Symbol}/{order.PositionSide.GetDescription()}");
@@ -315,7 +316,7 @@ namespace CEF.Common.Context
                     dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                     dbOrder.Status = OrderStatus.Invalid.GetDescription();
                     await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status" });
-                    var future = futures.FirstOrDefault(x => x.Symbol == dbOrder.Symbol && x.Status != FutureStatus.None);
+                    var future = futures.FirstOrDefault(x => x.Symbol == dbOrder.Symbol && x.Status != FutureStatus.None && x.Id == dbOrder.FutureId);
                     if (future != null)
                     {
                         future.Status = FutureStatus.None;
@@ -333,7 +334,7 @@ namespace CEF.Common.Context
                 await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status", "AvgPrice" });
                 if (order.Status == OrderStatus.Filled)
                 {
-                    var future = futures.FirstOrDefault(x => x.Symbol == order.Symbol && x.PositionSide == (int)order.PositionSide);
+                    var future = futures.FirstOrDefault(x => x.Symbol == order.Symbol && x.PositionSide == (int)order.PositionSide && x.Id == dbOrder.FutureId);
                     if (future == null)
                     {
                         this._logger.LogError($"未发现合约配置{order.Symbol}/{order.PositionSide.GetDescription()}");

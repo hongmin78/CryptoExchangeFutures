@@ -37,7 +37,7 @@ namespace CEF.Common.Trader
         }
 
 
-        public async Task ClosePositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null)
+        public async Task ClosePositionAsync(long futureId, string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null)
         {
             using var scope = this._serviceProvider.CreateScope();
             using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
@@ -60,7 +60,8 @@ namespace CEF.Common.Trader
                 Symbol = symbol,
                 Type = orderType.GetDescription(),
                 UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff"),
-                OrderSide = "Close"
+                OrderSide = "Close",
+                FutureId = futureId
             };
             await dbAccessor.InsertAsync(order);
             var callResult = await this._exchange.ClosePositionAsync(symbol, orderType, side, quantity, price, order.ClientOrderId);
@@ -71,7 +72,7 @@ namespace CEF.Common.Trader
                 this._logger.LogError($"平仓失败. errorcode:{callResult.ErrorCode}, message:{callResult.Msg}, 参数:{symbol}/{orderType}/{side}/{quantity}/{price}");
         }
 
-        public async Task OpenPositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null)
+        public async Task OpenPositionAsync(long futureId, string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null)
         {
             using var scope = this._serviceProvider.CreateScope();
             using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
@@ -94,7 +95,8 @@ namespace CEF.Common.Trader
                 Symbol = symbol,
                 Type = orderType.GetDescription(),
                 UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff"),
-                OrderSide = "Open"
+                OrderSide = "Open",
+                FutureId = futureId
             };
             await dbAccessor.InsertAsync(order);
             var callResult = await this._exchange.OpenPositionAsync(symbol, orderType, side, quantity, price, order.ClientOrderId);
