@@ -467,12 +467,12 @@ namespace CEF.Common.Exchange
         {
             var positionModeResult = await this.Client.UsdFuturesApi.Account.GetPositionModeAsync();
             if (!positionModeResult.Success)
-                new CallResult<FutureOrder>()
-                {
-                    Success = positionModeResult.Success,
-                    ErrorCode = positionModeResult.Error?.Code,
-                    Msg = positionModeResult.Error?.Message
-                };
+               return new CallResult<FutureOrder>()
+               {
+                   Success = positionModeResult.Success,
+                   ErrorCode = positionModeResult.Error?.Code,
+                   Msg = positionModeResult.Error?.Message
+               };
             var dualSidePosition = positionModeResult.Data.PositionMode == PositionMode.Hedge;
             var result = await this.Client.UsdFuturesApi.Trading.PlaceOrderAsync(
                 symbol,
