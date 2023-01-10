@@ -351,7 +351,7 @@ namespace CEF.Common.Exchange
         {
             var positionModeResult = await this.Client.UsdFuturesApi.Account.GetPositionModeAsync();
             if (!positionModeResult.Success)
-                new CallResult<FutureOrder>()
+               return new CallResult<FutureOrder>()
                 {
                     Success = positionModeResult.Success,
                     ErrorCode = positionModeResult.Error?.Code,
