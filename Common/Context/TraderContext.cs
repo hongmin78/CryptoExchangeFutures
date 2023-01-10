@@ -195,6 +195,8 @@ namespace CEF.Common.Context
                         }
                         else if (future.Status == FutureStatus.Closing)
                         {
+                            dbOrder.PNL = (order.PositionSide == PositionSide.Long ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * dbOrder.Quantity;
+                            await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "PNL" });
                             future.Size = 0;
                             future.AbleSize = 0;
                             future.EntryPrice = 0;
