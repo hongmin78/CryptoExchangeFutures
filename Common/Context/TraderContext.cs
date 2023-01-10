@@ -40,31 +40,33 @@ namespace CEF.Common.Context
             _memoryCache = memoryCache;
         }
 
-        public async Task ExecuteAsync(IEnumerable<string> symbols, CancellationToken ct = default)
+        public async Task ExecuteAsync(CancellationToken ct = default)
         {
+            var futures = await this.GetFuturesAsync();
+            var symbols = futures.Select(x=>x.Symbol).Distinct();
             await SubscribeToKlineUpdatesAsync(symbols);
             await SubscribeToUserDataUpdatesAsync();
             var futureInfoList = await this.GetSymbolsAsync();
             while (!ct.IsCancellationRequested)
             {
                 try
-                {
-                    var futures = await this.GetFuturesAsync();
+                { 
                     //await Parallel.ForEachAsync(symbols, async (symbol, cancellationToken) =>
-                    foreach(var symbol in symbols)
+                    foreach(var future in futures)
                     {
+                        var symbol = future.Symbol;
                         var futureInfo = futureInfoList.FirstOrDefault(x => x.Name == symbol);
                         if (futureInfo == null)
                         {
                             this._logger.LogError($"未能在交易所发现交易对{symbol}.");
                             continue;
                         }
+                        //var future = futures.FirstOrDefault(x => x.Symbol == symbol && x.PositionSide == (int)strategy.Side && x.Status == FutureStatus.None);
+                        if (future.IsEnabled != 1 || future.Status != FutureStatus.None)
+                            continue;
                         foreach (var strategy in this._strategyList)
-                        {
-                            var future = futures.FirstOrDefault(x => x.Symbol == symbol && x.PositionSide == (int)strategy.Side && x.Status == FutureStatus.None);
-                            if (future == null)
-                                continue;
-                                //future = await CreateFutureAsync(symbol, strategy.Side);
+                        { 
+                            if((int)strategy.Side != future.PositionSide) continue;
                             var per15MinuteKlines = await this.GetKlineData(symbol, PeriodOption.Per15Minute);
                             var fourHourlyKlines = await this.GetKlineData(symbol, PeriodOption.FourHourly);
                             var per15MinuteKlineIC = IndexedObjectConstructor(per15MinuteKlines, per15MinuteKlines.Count() - 1);
@@ -362,6 +364,8 @@ namespace CEF.Common.Context
                     }
                     else if (future.Status == FutureStatus.Closing)
                     {
+                        dbOrder.PNL = (order.PositionSide == PositionSide.Long ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * dbOrder.Quantity;
+                        await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "PNL" });
                         future.Size = 0;
                         future.AbleSize = 0;
                         future.EntryPrice = 0;
@@ -378,7 +382,7 @@ namespace CEF.Common.Context
                                 "LastTransactionOpenSize",
                                 "OrdersCount",
                                 "Status",
-                                "UpdateTime" });
+                                "UpdateTime" }); 
                     }
                     else
                         this._logger.LogError($"错误的合约配置状态{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");

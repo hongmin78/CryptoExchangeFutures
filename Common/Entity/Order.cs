@@ -42,5 +42,7 @@ namespace CEF.Common.Entity
         public string Side { set; get; }
 
         public long? FutureId { set; get; }
+
+        public decimal? PNL { set; get; }
     }
 }
