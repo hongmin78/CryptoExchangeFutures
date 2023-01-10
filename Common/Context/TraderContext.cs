@@ -41,18 +41,18 @@ namespace CEF.Common.Context
         }
 
         public async Task ExecuteAsync(CancellationToken ct = default)
-        {
-            var futures = await this.GetFuturesAsync();
-            var symbols = futures.Select(x=>x.Symbol).Distinct();
+        {           
+            var symbols = (await this.GetFuturesAsync()).Select(x=>x.Symbol).Distinct();
             await SubscribeToKlineUpdatesAsync(symbols);
             await SubscribeToUserDataUpdatesAsync();
             var futureInfoList = await this.GetSymbolsAsync();
             while (!ct.IsCancellationRequested)
             {
                 try
-                { 
+                {
+                    var futures = await this.GetFuturesAsync();
                     //await Parallel.ForEachAsync(symbols, async (symbol, cancellationToken) =>
-                    foreach(var future in futures)
+                    foreach (var future in futures)
                     {
                         var symbol = future.Symbol;
                         var futureInfo = futureInfoList.FirstOrDefault(x => x.Name == symbol);
@@ -285,14 +285,14 @@ namespace CEF.Common.Context
 
         async Task<IEnumerable<Future>> GetFuturesAsync()
         { 
-            var result = await this._memoryCache.GetOrSetObjectAsync<IEnumerable<Future>>(futuresMemoryKey, async () =>
-            {
+            //var result = await this._memoryCache.GetOrSetObjectAsync<IEnumerable<Future>>(futuresMemoryKey, async () =>
+            //{
                 using var scope = this._serviceProvider.CreateScope();
                 using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
                 var futures = await dbAccessor.GetIQueryable<Future>().ToListAsync();
                 return futures;
-            }, new MemoryCacheEntryOptions() { SlidingExpiration = TimeSpan.FromDays(30) });
-            return result;
+            //}, new MemoryCacheEntryOptions() { SlidingExpiration = TimeSpan.FromDays(30) });
+            //return result;
         }
 
         async Task UpdateFutureAsync(Future future, List<string> properties)
