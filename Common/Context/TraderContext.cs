@@ -384,13 +384,27 @@ namespace CEF.Common.Context
                                 "LastTransactionOpenSize",
                                 "OrdersCount",
                                 "Status",
-                                "UpdateTime" }); 
+                                "UpdateTime" });
                     }
                     else
                         this._logger.LogError($"错误的合约配置状态{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
                 }
-                else
+                else if (order.Status != OrderStatus.PartiallyFilled)
+                {
                     this._logger.LogError($"定单状态异常. orderId:{order.Id}");
+                    dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                    dbOrder.Status = OrderStatus.Invalid.GetDescription();
+                    await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status" });
+                    var future = futures.FirstOrDefault(x => x.Symbol == dbOrder.Symbol && x.Status != FutureStatus.None && x.Id == dbOrder.FutureId);
+                    if (future != null)
+                    {
+                        future.Status = FutureStatus.None;
+                        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                        await this.UpdateFutureAsync(future, new List<string>() {
+                                "Status",
+                                "UpdateTime" });
+                    }
+                }
             }
         }
 
