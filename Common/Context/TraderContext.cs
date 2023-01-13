@@ -392,18 +392,19 @@ namespace CEF.Common.Context
                 else if (order.Status != OrderStatus.PartiallyFilled)
                 {
                     this._logger.LogError($"定单状态异常. orderId:{order.Id}");
-                    dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                    dbOrder.Status = OrderStatus.Invalid.GetDescription();
-                    await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status" });
-                    var future = futures.FirstOrDefault(x => x.Symbol == dbOrder.Symbol && x.Status != FutureStatus.None && x.Id == dbOrder.FutureId);
-                    if (future != null)
-                    {
-                        future.Status = FutureStatus.None;
-                        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                        await this.UpdateFutureAsync(future, new List<string>() {
-                                "Status",
-                                "UpdateTime" });
-                    }
+                    this._logger.LogInformation($"{ order.ToJson()}");
+                    //dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                    //dbOrder.Status = OrderStatus.Invalid.GetDescription();
+                    //await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status" });
+                    //var future = futures.FirstOrDefault(x => x.Symbol == dbOrder.Symbol && x.Status != FutureStatus.None && x.Id == dbOrder.FutureId);
+                    //if (future != null)
+                    //{
+                    //    future.Status = FutureStatus.None;
+                    //    future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                    //    await this.UpdateFutureAsync(future, new List<string>() {
+                    //            "Status",
+                    //            "UpdateTime" });
+                    //}
                 }
             }
         }
