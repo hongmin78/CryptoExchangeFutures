@@ -317,18 +317,22 @@ namespace CEF.Common.Context
                 if (!orderResult.Success)
                 {
                     this._logger.LogError($"无法从交易所获取定单详细. orderId:{dbOrder.Id}.  errorcode:{orderResult.ErrorCode} msg:{orderResult.Msg}");
-                    dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                    dbOrder.Status = OrderStatus.Invalid.GetDescription();
-                    await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status" });
-                    var future = futures.FirstOrDefault(x => x.Symbol == dbOrder.Symbol && x.Status != FutureStatus.None && x.Id == dbOrder.FutureId);
-                    if (future != null)
+                    this._logger.LogInformation($"{orderResult.ToJson()}");
+                    if (orderResult.ErrorCode == -2013)
                     {
-                        future.Status = FutureStatus.None;
-                        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                        await this.UpdateFutureAsync(future, new List<string>() {                               
+                        dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                        dbOrder.Status = OrderStatus.Invalid.GetDescription();
+                        await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status" });
+                        var future = futures.FirstOrDefault(x => x.Symbol == dbOrder.Symbol && x.Status != FutureStatus.None && x.Id == dbOrder.FutureId);
+                        if (future != null)
+                        {
+                            future.Status = FutureStatus.None;
+                            future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                            await this.UpdateFutureAsync(future, new List<string>() {
                                 "Status",
                                 "UpdateTime" });
-                    } 
+                        }
+                    }
                     continue;
                 }
                 var order = orderResult.Data;
