@@ -469,8 +469,8 @@ namespace CEF.Common.Context
                     if (future.Status == FutureStatus.Openning)
                     {
                         future.EntryPrice = (future.EntryPrice * future.Size + order.AvgPrice * order.LastFilledQuantity) / (future.Size + order.LastFilledQuantity);
-                        future.Size += order.QuantityFilled;
-                        future.AbleSize += order.QuantityFilled;
+                        future.Size += order.LastFilledQuantity;
+                        future.AbleSize += order.LastFilledQuantity;
                         future.LastTransactionOpenPrice = order.AvgPrice;
                         future.LastTransactionOpenSize = order.LastFilledQuantity;
                         future.OrdersCount++;
