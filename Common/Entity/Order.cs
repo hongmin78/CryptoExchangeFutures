@@ -44,5 +44,7 @@ namespace CEF.Common.Entity
         public long? FutureId { set; get; }
 
         public decimal? PNL { set; get; }
+
+        public decimal FilledQuantity { set; get; }
     }
 }
