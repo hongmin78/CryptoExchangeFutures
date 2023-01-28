@@ -221,63 +221,63 @@ namespace CEF.Common.Context
                         else
                             this._logger.LogError($"错误的合约配置状态{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
                     }
-                    else if(order.Status == OrderStatus.Expired)
-                    {
-                        dbOrder.FilledQuantity = order.LastFilledQuantity;
-                        await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "FilledQuantity" });
+                    //else if(order.Status == OrderStatus.Expired)
+                    //{
+                    //    dbOrder.FilledQuantity = order.LastFilledQuantity;
+                    //    await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "FilledQuantity" });
 
-                        var futures = await this.GetFuturesAsync();
-                        var future = futures.FirstOrDefault(x => x.Symbol == order.Symbol && x.PositionSide == (int)order.PositionSide && x.Id == dbOrder?.FutureId);
-                        if (future == null)
-                        {
-                            this._logger.LogError($"未发现合约配置{order.Symbol}/{order.PositionSide.GetDescription()}");
-                            return;
-                        }
-                        if (future.Status == FutureStatus.Openning)
-                        {
-                            future.EntryPrice = (future.EntryPrice * future.Size + order.AvgPrice * order.LastFilledQuantity) / (future.Size + order.LastFilledQuantity);
-                            future.Size += order.LastFilledQuantity;
-                            future.AbleSize += order.LastFilledQuantity;
-                            future.LastTransactionOpenPrice = order.AvgPrice;
-                            future.LastTransactionOpenSize = order.LastFilledQuantity;
-                            future.OrdersCount++;
-                            future.Status = FutureStatus.None;
-                            future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                            await this.UpdateFutureAsync(future, new List<string>() {
-                                "Size",
-                                "AbleSize",
-                                "EntryPrice",
-                                "LastTransactionOpenPrice",
-                                "LastTransactionOpenSize",
-                                "OrdersCount",
-                                "Status",
-                                "UpdateTime" });
-                        }
-                        else if (future.Status == FutureStatus.Closing)
-                        {
-                            dbOrder.PNL = (order.PositionSide == PositionSide.Long ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * dbOrder.Quantity;
-                            await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "PNL" });
-                            future.Size -= order.LastFilledQuantity;
-                            future.AbleSize = order.LastFilledQuantity;
-                            future.EntryPrice = 0;
-                            future.LastTransactionOpenPrice = 0;
-                            future.LastTransactionOpenSize = 0;
-                            future.OrdersCount = 0;
-                            future.Status = FutureStatus.None;
-                            future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                            await this.UpdateFutureAsync(future, new List<string>() {
-                                "Size",
-                                "AbleSize",
-                                "EntryPrice",
-                                "LastTransactionOpenPrice",
-                                "LastTransactionOpenSize",
-                                "OrdersCount",
-                                "Status",
-                                "UpdateTime" });
-                        }
-                        else
-                            this._logger.LogError($"错误的合约配置状态{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
-                    }
+                    //    var futures = await this.GetFuturesAsync();
+                    //    var future = futures.FirstOrDefault(x => x.Symbol == order.Symbol && x.PositionSide == (int)order.PositionSide && x.Id == dbOrder?.FutureId);
+                    //    if (future == null)
+                    //    {
+                    //        this._logger.LogError($"未发现合约配置{order.Symbol}/{order.PositionSide.GetDescription()}");
+                    //        return;
+                    //    }
+                    //    if (future.Status == FutureStatus.Openning)
+                    //    {
+                    //        future.EntryPrice = (future.EntryPrice * future.Size + order.AvgPrice * order.LastFilledQuantity) / (future.Size + order.LastFilledQuantity);
+                    //        future.Size += order.LastFilledQuantity;
+                    //        future.AbleSize += order.LastFilledQuantity;
+                    //        future.LastTransactionOpenPrice = order.AvgPrice;
+                    //        future.LastTransactionOpenSize = order.LastFilledQuantity;
+                    //        future.OrdersCount++;
+                    //        future.Status = FutureStatus.None;
+                    //        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                    //        await this.UpdateFutureAsync(future, new List<string>() {
+                    //            "Size",
+                    //            "AbleSize",
+                    //            "EntryPrice",
+                    //            "LastTransactionOpenPrice",
+                    //            "LastTransactionOpenSize",
+                    //            "OrdersCount",
+                    //            "Status",
+                    //            "UpdateTime" });
+                    //    }
+                    //    else if (future.Status == FutureStatus.Closing)
+                    //    {
+                    //        dbOrder.PNL = (order.PositionSide == PositionSide.Long ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * dbOrder.Quantity;
+                    //        await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "PNL" });
+                    //        future.Size -= order.LastFilledQuantity;
+                    //        future.AbleSize = order.LastFilledQuantity;
+                    //        future.EntryPrice = 0;
+                    //        future.LastTransactionOpenPrice = 0;
+                    //        future.LastTransactionOpenSize = 0;
+                    //        future.OrdersCount = 0;
+                    //        future.Status = FutureStatus.None;
+                    //        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                    //        await this.UpdateFutureAsync(future, new List<string>() {
+                    //            "Size",
+                    //            "AbleSize",
+                    //            "EntryPrice",
+                    //            "LastTransactionOpenPrice",
+                    //            "LastTransactionOpenSize",
+                    //            "OrdersCount",
+                    //            "Status",
+                    //            "UpdateTime" });
+                    //    }
+                    //    else
+                    //        this._logger.LogError($"错误的合约配置状态{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
+                    //}
                 });
         }
 
