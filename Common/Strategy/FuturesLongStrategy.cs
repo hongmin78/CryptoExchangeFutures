@@ -23,7 +23,7 @@ namespace CEF.Common.Strategy
         {
             if (per15MinuteIndexedOhlcv == null || fourHourlyIndexedOhlcv == null) return;
             if (future.IsEnabled != 1 || future.Status != FutureStatus.None) return;
-            if (future.OrdersCount == 0)
+            if (future.OrdersCount == 0 && per15MinuteIndexedOhlcv.Prev.Close > per15MinuteIndexedOhlcv.Prev.Open)
                 await openFunc?.Invoke(future.Symbol, OrderType.Market, Side, future.BaseOrderSize);
             else
             {
