@@ -23,8 +23,11 @@ namespace CEF.Common.Strategy
         {
             if (per15MinuteIndexedOhlcv == null || fourHourlyIndexedOhlcv == null) return;
             if (future.IsEnabled != 1 || future.Status != FutureStatus.None) return;
-            if (future.OrdersCount == 0 && per15MinuteIndexedOhlcv.Prev.Close > per15MinuteIndexedOhlcv.Prev.Open)
-                await openFunc?.Invoke(future.Symbol, OrderType.Market, Side, future.BaseOrderSize);
+            if (future.OrdersCount == 0)
+            {
+                if (per15MinuteIndexedOhlcv.Prev.Close > per15MinuteIndexedOhlcv.Prev.Open)
+                    await openFunc?.Invoke(future.Symbol, OrderType.Market, Side, future.BaseOrderSize);
+            }
             else
             {
                 if (per15MinuteIndexedOhlcv.Close > future.EntryPrice)
@@ -39,7 +42,7 @@ namespace CEF.Common.Strategy
                         ((future.LastTransactionOpenPrice - per15MinuteIndexedOhlcv.Close) / future.LastTransactionOpenPrice) < 0.1m &&
                        per15MinuteIndexedOhlcv.Prev.Close > per15MinuteIndexedOhlcv.Prev.Open)
                         await openFunc?.Invoke(future.Symbol, OrderType.Market, Side, future.SafetyOrderSize);
-                    else if(((future.LastTransactionOpenPrice - per15MinuteIndexedOhlcv.Close) / future.LastTransactionOpenPrice) > 0.1m &&
+                    else if (((future.LastTransactionOpenPrice - per15MinuteIndexedOhlcv.Close) / future.LastTransactionOpenPrice) > 0.1m &&
                         fourHourlyIndexedOhlcv.Prev.Close > fourHourlyIndexedOhlcv.Prev.Open)
                         await openFunc?.Invoke(future.Symbol, OrderType.Market, Side, future.SafetyOrderSize);
                 }
