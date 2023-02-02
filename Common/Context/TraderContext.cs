@@ -210,6 +210,7 @@ namespace CEF.Common.Context
                             future.Status = FutureStatus.None;
                             future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                             await this.UpdateFutureAsync(future, new List<string>() {
+                                "PNL",
                                 "Size",
                                 "AbleSize",
                                 "EntryPrice",
@@ -445,6 +446,7 @@ namespace CEF.Common.Context
                         future.Status = FutureStatus.None;
                         future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                         await this.UpdateFutureAsync(future, new List<string>() {
+                                "PNL",
                                 "Size",
                                 "AbleSize",
                                 "EntryPrice",
@@ -473,9 +475,12 @@ namespace CEF.Common.Context
                         future.EntryPrice = (future.EntryPrice * future.Size + order.AvgPrice * order.LastFilledQuantity) / (future.Size + order.LastFilledQuantity);
                         future.Size += order.LastFilledQuantity;
                         future.AbleSize += order.LastFilledQuantity;
-                        future.LastTransactionOpenPrice = order.AvgPrice;
-                        future.LastTransactionOpenSize = order.LastFilledQuantity;
-                        future.OrdersCount++;
+                        if (order.LastFilledQuantity > 0)
+                        {
+                            future.LastTransactionOpenPrice = order.AvgPrice;
+                            future.LastTransactionOpenSize = order.LastFilledQuantity;
+                            future.OrdersCount++;
+                        }
                         future.Status = FutureStatus.None;
                         future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                         await this.UpdateFutureAsync(future, new List<string>() {
@@ -498,12 +503,9 @@ namespace CEF.Common.Context
                         future.Status = FutureStatus.None;
                         future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                         await this.UpdateFutureAsync(future, new List<string>() {
+                                "PNL",
                                 "Size",
-                                "AbleSize",
-                                "EntryPrice",
-                                "LastTransactionOpenPrice",
-                                "LastTransactionOpenSize",
-                                "OrdersCount",
+                                "AbleSize",                               
                                 "Status",
                                 "UpdateTime" });
                     }

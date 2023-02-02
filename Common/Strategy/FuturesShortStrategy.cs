@@ -22,7 +22,38 @@ namespace CEF.Common.Strategy
             Func<string, OrderType, PositionSide, decimal?, Task> openFunc, 
             Func<string, OrderType, PositionSide, decimal?, Task> closeFunc)
         {
-            await Task.CompletedTask;
+            if (per15MinuteIndexedOhlcv == null || fourHourlyIndexedOhlcv == null) return;
+            if (future.IsEnabled != 1 || future.Status != FutureStatus.None) return;
+            if (future.OrdersCount == 0)
+            {
+                if (per15MinuteIndexedOhlcv.Prev.Close < per15MinuteIndexedOhlcv.Prev.Open)
+                    await openFunc?.Invoke(future.Symbol, OrderType.Market, Side, future.BaseOrderSize);
+            }
+            else
+            {
+                if (per15MinuteIndexedOhlcv.Close < future.EntryPrice)
+                {
+                    if (((future.EntryPrice - per15MinuteIndexedOhlcv.Close) / future.EntryPrice) > future.TargetProfit &&
+                        per15MinuteIndexedOhlcv.Prev.Close > per15MinuteIndexedOhlcv.Prev.Open)
+                        await closeFunc?.Invoke(future.Symbol, OrderType.Market, Side, future.Size);
+                }
+                else if (future.OrdersCount == 1)
+                {
+                    if (((per15MinuteIndexedOhlcv.Close - future.LastTransactionOpenPrice) / future.LastTransactionOpenPrice) > future.SafetyOrderPriceDeviation &&
+                        ((per15MinuteIndexedOhlcv.Close - future.LastTransactionOpenPrice) / future.LastTransactionOpenPrice) < 0.1m &&
+                       per15MinuteIndexedOhlcv.Prev.Close < per15MinuteIndexedOhlcv.Prev.Open)
+                        await openFunc?.Invoke(future.Symbol, OrderType.Market, Side, future.SafetyOrderSize);
+                    else if (((per15MinuteIndexedOhlcv.Close - future.LastTransactionOpenPrice) / future.LastTransactionOpenPrice) > 0.1m &&
+                        fourHourlyIndexedOhlcv.Prev.Close < fourHourlyIndexedOhlcv.Prev.Open)
+                        await openFunc?.Invoke(future.Symbol, OrderType.Market, Side, future.SafetyOrderSize);
+                }
+                else if (future.OrdersCount < (future.MaxSafetyOrdersCount + 1))
+                {
+                    if (((per15MinuteIndexedOhlcv.Close - future.LastTransactionOpenPrice) / future.LastTransactionOpenPrice) > 0.1m &&
+                       fourHourlyIndexedOhlcv.Prev.Close < fourHourlyIndexedOhlcv.Prev.Open)
+                        await openFunc?.Invoke(future.Symbol, OrderType.Market, Side, future.SafetyOrderSize * future.SafetyOrderVolumeScale);
+                }
+            }
         }
     }
 }
