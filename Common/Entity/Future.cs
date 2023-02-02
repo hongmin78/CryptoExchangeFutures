@@ -68,6 +68,8 @@ namespace CEF.Common.Entity
         public int IsEnabled { set; get; }
 
         public FutureStatus Status { set; get; }
+
+        public decimal PNL { set; get; }
     }
 
     public enum FutureStatus

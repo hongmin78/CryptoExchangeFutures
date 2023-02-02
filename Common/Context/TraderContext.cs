@@ -201,6 +201,7 @@ namespace CEF.Common.Context
                             dbOrder.PNL = (order.PositionSide == PositionSide.Long ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * dbOrder.Quantity;
                             await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "PNL" });
                             future.Size = 0;
+                            future.PNL += dbOrder.PNL??0;
                             future.AbleSize = 0;
                             future.EntryPrice = 0;
                             future.LastTransactionOpenPrice = 0;
@@ -434,6 +435,7 @@ namespace CEF.Common.Context
                     {
                         dbOrder.PNL = (order.PositionSide == PositionSide.Long ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * dbOrder.Quantity;
                         await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "PNL" });
+                        future.PNL += dbOrder.PNL ?? 0;
                         future.Size = 0;
                         future.AbleSize = 0;
                         future.EntryPrice = 0;
@@ -490,12 +492,9 @@ namespace CEF.Common.Context
                     {
                         dbOrder.PNL = (order.PositionSide == PositionSide.Long ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * dbOrder.Quantity;
                         await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "PNL" });
+                        future.PNL += dbOrder.PNL ?? 0;
                         future.Size -= order.LastFilledQuantity;
-                        future.AbleSize = order.LastFilledQuantity;
-                        future.EntryPrice = 0;
-                        future.LastTransactionOpenPrice = 0;
-                        future.LastTransactionOpenSize = 0;
-                        future.OrdersCount = 0;
+                        future.AbleSize -= order.LastFilledQuantity;                       
                         future.Status = FutureStatus.None;
                         future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                         await this.UpdateFutureAsync(future, new List<string>() {
