@@ -101,7 +101,7 @@ namespace CEF.Common.Context
                 }
                 finally
                 {
-                    await Task.Delay(TimeSpan.FromMilliseconds(300));
+                    await Task.Delay(TimeSpan.FromMilliseconds(1000));
                 }
             }
         }
@@ -373,7 +373,7 @@ namespace CEF.Common.Context
             var dbOrders = await dbAccessor.GetIQueryable<Entity.Order>().Where(x => x.Status != OrderStatus.Filled.GetDescription() && x.Status != OrderStatus.Invalid.GetDescription() && x.Status != OrderStatus.Expired.GetDescription()).ToListAsync();
             foreach (var dbOrder in dbOrders)
             {
-                if (DateTime.Now.Subtract(DateTime.Parse(dbOrder.CreateTime.Remove(dbOrder.CreateTime.Length - 4))).TotalSeconds < 10)
+                if (DateTime.Now.Subtract(DateTime.Parse(dbOrder.CreateTime.Remove(dbOrder.CreateTime.Length - 4))).TotalSeconds < 30)
                     continue;
                 var orderResult = await this._exchange.GetOrderAsync(dbOrder.Symbol, null, dbOrder.ClientOrderId);
                 if (!orderResult.Success)
