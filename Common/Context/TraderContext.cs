@@ -151,6 +151,7 @@ namespace CEF.Common.Context
                 },
                 async order =>
                 {
+                    if (order.Status == OrderStatus.Expired) return;
                     using var scope = this._serviceProvider.CreateScope();
                     using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
                     var dbOrder = await dbAccessor.GetIQueryable<Entity.Order>().FirstOrDefaultAsync(x=>x.ClientOrderId == order.ClientOrderId);
