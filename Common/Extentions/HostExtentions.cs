@@ -50,14 +50,14 @@ namespace CEF.Common.Extentions
             SelfLog.Enable(Console.Error);
 
             #region 控制台exceptionless
-            hostBuilder.ConfigureLogging((config, builder) =>
-            {
-                builder.AddExceptionless(config.Configuration.GetSection("Exceptionless:ApiKey").Value, config.Configuration.GetSection("Exceptionless:ServerUrl").Value);
+            //hostBuilder.ConfigureLogging((config, builder) =>
+            //{
+            //    builder.AddExceptionless(config.Configuration.GetSection("Exceptionless:ApiKey").Value, config.Configuration.GetSection("Exceptionless:ServerUrl").Value);
 
-            }).ConfigureServices(services =>
-            {
-                services.AddExceptionless();
-            }).UseExceptionless();
+            //}).ConfigureServices(services =>
+            //{
+            //    services.AddExceptionless();
+            //}).UseExceptionless();
             #endregion
             return hostBuilder.UseSerilog((hostingContext, serviceProvider, serilogConfig) =>
             {

@@ -21,7 +21,7 @@ namespace CEF.Common.Sinks
         {
             if (logEvent.GetLevel() < LogLevel.Warning)
                 return;
-            //OapiRobotHelper.OapiRobotText($"[{logEvent.GetLevel()}] {logEvent.MessageTemplate.Text}", new List<string> { }, false);
+            OapiRobotHelper.Message($"[{logEvent.GetLevel()}] {logEvent.MessageTemplate.Text}").ConfigureAwait(false).GetAwaiter().GetResult();
         }
     }
 }

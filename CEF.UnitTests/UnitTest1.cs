@@ -7,8 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using NUnit.Framework.Internal;
-using static CEF.Common.OapiRobot.OapiRobotHelper;
+using NUnit.Framework.Internal; 
 
 namespace CEF.UnitTests
 {

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,8 +13,52 @@ namespace CEF.Common.OapiRobot
     public class OapiRobotHelper
     {
         public static string dd_host = "https://oapi.dingtalk.com/";
-        public static string RobotSendUrl = "robot/send?access_token=eb19e1c56c40bddefb8cedc9c160b4367357df5482bdf1961c2bc0ead051e120";
-        //https://oapi.dingtalk.com/robot/send?access_token=eb19e1c56c40bddefb8cedc9c160b4367357df5482bdf1961c2bc0ead051e120
+        public static string RobotSendUrl = "robot/send?access_token=1cb03f6f04e3aea0dd517bc46069aec5f8bfb7988eda9b6e32d2225539b0091a";
+
+        /// <summary>
+        /// 发送钉钉提醒
+        /// </summary>
+        /// <param name="content">发送内容</param>
+        /// <returns></returns>
+        public static async Task Message(string content)
+        {
+            WebhookModel model = new WebhookModel();
+            model.msgtype = "text";
+            model.text = new WebhookModelText();
+            model.text.content = $"{content}";
+            await Message(model, "交易机器人", $"{dd_host}{RobotSendUrl}");
+        }
+
+        /// <summary>
+        /// 发送消息
+        /// </summary>
+        /// <param name="model">钉钉型号</param>
+        /// <param name="key">关键字</param>
+        /// <param name="token">令牌地址</param>
+        /// <returns></returns>
+        private static async Task Message(WebhookModel model, string key, string token)
+        {
+            model.text.content = $"{key}:{model.text.content}";
+            string content = JsonConvert.SerializeObject(model);
+            var buffer = Encoding.UTF8.GetBytes(content);
+            var byteContent = new ByteArrayContent(buffer);
+            byteContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            try
+            {
+                HttpClient client = new HttpClient();
+                var response = await client.PostAsync(token, byteContent);
+                string result = await response.Content.ReadAsStringAsync();
+                if (response.StatusCode != HttpStatusCode.OK)
+                { 
+                   Console.WriteLine($"钉钉机器人发送群消息出错:群内容为:{content}");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Console.WriteLine($"钉钉机器人发送群消息出错:群内容为:{content}");
+            }
+        }
+
         /// <summary>
         /// 发起请求
         /// </summary>
@@ -193,5 +238,31 @@ namespace CEF.Common.OapiRobot
             string data = JsonConvert.SerializeObject(fcModel);
             string json = Request(RobotSendUrl, data, "POST");
         }
+    }
+
+    /// <summary>
+    /// 钉钉webhook模型
+    /// </summary>
+    public class WebhookModel
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public string msgtype { get; set; } = null!;
+        /// <summary>
+        /// 
+        /// </summary>
+        public WebhookModelText text { get; set; } = null!;
+    }
+
+    /// <summary>
+    /// 钉钉webhook模型
+    /// </summary>
+    public class WebhookModelText
+    {
+        /// <summary>
+        /// IDCM主流币机器人
+        /// </summary>
+        public string content { get; set; } = null!;
     }
 }
