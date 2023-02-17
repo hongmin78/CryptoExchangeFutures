@@ -196,9 +196,12 @@ namespace CEF.Common.Context
                                 "OrdersCount",
                                 "Status",
                                 "UpdateTime" });
+                            this._logger.LogWarning($"({future.Symbol} {(future.PositionSide == 1 ? "多" : "空")}) 执行开仓. safety order [{future.OrdersCount - 1}/{future.MaxSafetyOrdersCount}]. 价格:{order.AvgPrice}, 大小:{order.AvgPrice * order.Quantity} USDT.");
                         }
                         else if (future.Status == FutureStatus.Closing)
                         {
+                            var avgPrice = order.AvgPrice;
+                            var entryPrice = future.EntryPrice;
                             dbOrder.PNL = (order.PositionSide == PositionSide.Long ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * dbOrder.Quantity;
                             await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "PNL" });
                             future.Size = 0;
@@ -220,67 +223,11 @@ namespace CEF.Common.Context
                                 "OrdersCount",
                                 "Status",
                                 "UpdateTime" });
+                            this._logger.LogWarning($"({future.Symbol} {(future.PositionSide==1 ? "多" : "空")}) 执行平仓. 持仓价:{entryPrice}, 平仓价:{avgPrice}, 利润:{dbOrder.PNL ?? 0} USDT.");
                         }
                         else
                             this._logger.LogError($"错误的合约配置状态{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
                     }
-                    //else if(order.Status == OrderStatus.Expired)
-                    //{
-                    //    dbOrder.FilledQuantity = order.LastFilledQuantity;
-                    //    await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "FilledQuantity" });
-
-                    //    var futures = await this.GetFuturesAsync();
-                    //    var future = futures.FirstOrDefault(x => x.Symbol == order.Symbol && x.PositionSide == (int)order.PositionSide && x.Id == dbOrder?.FutureId);
-                    //    if (future == null)
-                    //    {
-                    //        this._logger.LogError($"未发现合约配置{order.Symbol}/{order.PositionSide.GetDescription()}");
-                    //        return;
-                    //    }
-                    //    if (future.Status == FutureStatus.Openning)
-                    //    {
-                    //        future.EntryPrice = (future.EntryPrice * future.Size + order.AvgPrice * order.LastFilledQuantity) / (future.Size + order.LastFilledQuantity);
-                    //        future.Size += order.LastFilledQuantity;
-                    //        future.AbleSize += order.LastFilledQuantity;
-                    //        future.LastTransactionOpenPrice = order.AvgPrice;
-                    //        future.LastTransactionOpenSize = order.LastFilledQuantity;
-                    //        future.OrdersCount++;
-                    //        future.Status = FutureStatus.None;
-                    //        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                    //        await this.UpdateFutureAsync(future, new List<string>() {
-                    //            "Size",
-                    //            "AbleSize",
-                    //            "EntryPrice",
-                    //            "LastTransactionOpenPrice",
-                    //            "LastTransactionOpenSize",
-                    //            "OrdersCount",
-                    //            "Status",
-                    //            "UpdateTime" });
-                    //    }
-                    //    else if (future.Status == FutureStatus.Closing)
-                    //    {
-                    //        dbOrder.PNL = (order.PositionSide == PositionSide.Long ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * dbOrder.Quantity;
-                    //        await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "PNL" });
-                    //        future.Size -= order.LastFilledQuantity;
-                    //        future.AbleSize = order.LastFilledQuantity;
-                    //        future.EntryPrice = 0;
-                    //        future.LastTransactionOpenPrice = 0;
-                    //        future.LastTransactionOpenSize = 0;
-                    //        future.OrdersCount = 0;
-                    //        future.Status = FutureStatus.None;
-                    //        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                    //        await this.UpdateFutureAsync(future, new List<string>() {
-                    //            "Size",
-                    //            "AbleSize",
-                    //            "EntryPrice",
-                    //            "LastTransactionOpenPrice",
-                    //            "LastTransactionOpenSize",
-                    //            "OrdersCount",
-                    //            "Status",
-                    //            "UpdateTime" });
-                    //    }
-                    //    else
-                    //        this._logger.LogError($"错误的合约配置状态{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
-                    //}
                 });
         }
 
@@ -432,9 +379,12 @@ namespace CEF.Common.Context
                                 "OrdersCount",
                                 "Status",
                                 "UpdateTime" });
+                        this._logger.LogWarning($"({future.Symbol} {(future.PositionSide == 1 ? "多" : "空")}) 执行开仓. safety order [{future.OrdersCount - 1}/{future.MaxSafetyOrdersCount}]. 价格:{order.AvgPrice}, 大小:{order.AvgPrice * order.Quantity} USDT.");
                     }
                     else if (future.Status == FutureStatus.Closing)
                     {
+                        var avgPrice = order.AvgPrice;
+                        var entryPrice = future.EntryPrice;
                         dbOrder.PNL = (order.PositionSide == PositionSide.Long ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * dbOrder.Quantity;
                         await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "PNL" });
                         future.PNL += dbOrder.PNL ?? 0;
@@ -456,6 +406,7 @@ namespace CEF.Common.Context
                                 "OrdersCount",
                                 "Status",
                                 "UpdateTime" });
+                        this._logger.LogWarning($"({future.Symbol} {(future.PositionSide == 1 ? "多" : "空")}) 执行平仓. 持仓价:{entryPrice}, 平仓价:{avgPrice}, 利润:{dbOrder.PNL ?? 0} USDT.");
                     }
                     else
                         this._logger.LogError($"错误的合约配置状态{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
@@ -493,10 +444,13 @@ namespace CEF.Common.Context
                                 "OrdersCount",
                                 "Status",
                                 "UpdateTime" });
+                        this._logger.LogError($"({future.Symbol} {(future.PositionSide == 1 ? "多" : "空")}) 执行开仓仅部份成交. safety order [{future.OrdersCount - 1}/{future.MaxSafetyOrdersCount}]. 数量:{order.LastFilledQuantity}, 价格:{order.AvgPrice}, 大小:{order.AvgPrice * order.LastFilledQuantity} USDT.");
                     }
                     else if (future.Status == FutureStatus.Closing)
                     {
-                        dbOrder.PNL = (order.PositionSide == PositionSide.Long ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * dbOrder.Quantity;
+                        var avgPrice = order.AvgPrice;
+                        var entryPrice = future.EntryPrice;
+                        dbOrder.PNL = (order.PositionSide == PositionSide.Long ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * order.LastFilledQuantity;
                         await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "PNL" });
                         future.PNL += dbOrder.PNL ?? 0;
                         future.Size -= order.LastFilledQuantity;
@@ -509,6 +463,7 @@ namespace CEF.Common.Context
                                 "AbleSize",                               
                                 "Status",
                                 "UpdateTime" });
+                        this._logger.LogError($"({future.Symbol} {(future.PositionSide == 1 ? "多" : "空")}) 执行平仓仅部份成交. 持仓价:{entryPrice}, 数量:{order.LastFilledQuantity}, 平仓价:{avgPrice}, 利润:{dbOrder.PNL ?? 0} USDT.");
                     }
                     else
                         this._logger.LogError($"错误的合约配置状态{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
