@@ -59,8 +59,7 @@ namespace CEF.UnitTests
         [Test]
         public void test2() 
         {
-            var exchange = Services.CreateScope().ServiceProvider.GetService<IExchange>();
-            
+            var exchange = Services.CreateScope().ServiceProvider.GetService<IExchange>(); 
         }
     }
 }

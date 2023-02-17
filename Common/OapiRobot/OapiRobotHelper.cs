@@ -20,13 +20,13 @@ namespace CEF.Common.OapiRobot
         /// </summary>
         /// <param name="content">发送内容</param>
         /// <returns></returns>
-        public static async Task Message(string content)
+        public static async Task Message(string content, string key = "-_-")
         {
             WebhookModel model = new WebhookModel();
             model.msgtype = "text";
             model.text = new WebhookModelText();
             model.text.content = $"{content}";
-            await Message(model, "交易机器人", $"{dd_host}{RobotSendUrl}");
+            await Message(model, key, $"{dd_host}{RobotSendUrl}");
         }
 
         /// <summary>
