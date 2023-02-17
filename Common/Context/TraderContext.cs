@@ -223,7 +223,7 @@ namespace CEF.Common.Context
                                 "OrdersCount",
                                 "Status",
                                 "UpdateTime" });
-                            this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide==1 ? "Long" : "Short")}] Close Position. . Entry Price:{entryPrice}, Open Price:{avgPrice}, PNL:{dbOrder.PNL ?? 0} USDT.");
+                            this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide==1 ? "Long" : "Short")}] Close Position. Entry Price:{entryPrice}, Open Price:{avgPrice}, PNL:{dbOrder.PNL ?? 0} USDT.");
                         }
                         else
                             this._logger.LogError($"错误的合约配置状态{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
@@ -379,7 +379,7 @@ namespace CEF.Common.Context
                                 "OrdersCount",
                                 "Status",
                                 "UpdateTime" });
-                        this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide == 1 ? "Long" : "Short")}] Open Position.  safety order [{future.OrdersCount - 1}/{future.MaxSafetyOrdersCount}]. Price:{order.AvgPrice}, Size:{order.AvgPrice * order.Quantity} USDT.");
+                        this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide == 1 ? "Long" : "Short")}] Open Position. safety order [{future.OrdersCount - 1}/{future.MaxSafetyOrdersCount}]. Price:{order.AvgPrice}, Size:{order.AvgPrice * order.Quantity} USDT.");
                     }
                     else if (future.Status == FutureStatus.Closing)
                     {
@@ -406,7 +406,7 @@ namespace CEF.Common.Context
                                 "OrdersCount",
                                 "Status",
                                 "UpdateTime" });
-                        this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide == 1 ? "Long" : "Short")}] Close Position. . Entry Price:{entryPrice}, Close Price:{avgPrice}, PNL:{dbOrder.PNL ?? 0} USDT.");
+                        this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide == 1 ? "Long" : "Short")}] Close Position. Entry Price:{entryPrice}, Close Price:{avgPrice}, PNL:{dbOrder.PNL ?? 0} USDT.");
                     }
                     else
                         this._logger.LogError($"错误的合约配置状态{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
