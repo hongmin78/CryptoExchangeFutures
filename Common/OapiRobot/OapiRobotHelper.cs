@@ -20,7 +20,7 @@ namespace CEF.Common.OapiRobot
         /// </summary>
         /// <param name="content">发送内容</param>
         /// <returns></returns>
-        public static async Task Message(string content, string key = "-_-")
+        public static async Task Message(string content, string key = "Information")
         {
             WebhookModel model = new WebhookModel();
             model.msgtype = "text";
