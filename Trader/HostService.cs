@@ -1,4 +1,5 @@
 ﻿using CEF.Common.Context;
+using CEF.Common.Primitives;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -28,6 +29,7 @@ internal class HostService : BackgroundService
         this._cache = cache;
         this._configuration = configuration;
         this._context = context;
+        GlobalConfigure.ServiceLocatorInstance = serviceProvider;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

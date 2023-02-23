@@ -8,10 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Trader\Program.cs" Link="Program.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="..\Trader\appsettings.json" Link="appsettings.json" />
   </ItemGroup>
 
