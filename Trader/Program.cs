@@ -31,8 +31,8 @@ builder.Host.ConfigureAppConfiguration(config =>
         config.EnableShardingMigration(false);
     });
     services.AddHostedService<HostService>();
-});
-//.UseConsoleLifetime();
+})
+.UseConsoleLifetime();
 var app = builder.Build();
 app.Urls.Add("http://*");
 app.MapGet("/", () => "Trading Robot");
