@@ -10,8 +10,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Net.NetworkInformation;
 using Trady.Core;
 using Trady.Core.Infrastructure;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace CEF.Common.Context
 {
@@ -151,22 +153,22 @@ namespace CEF.Common.Context
                 },
                 async order =>
                 {
-                    if (order.Status == OrderStatus.Expired) return;
-                    using var scope = this._serviceProvider.CreateScope();
-                    using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
-                    var dbOrder = await dbAccessor.GetIQueryable<Entity.Order>().FirstOrDefaultAsync(x=>x.ClientOrderId == order.ClientOrderId);
-                    if (dbOrder == null)
-                    {
-                        this._logger.LogInformation($"Order Not Found. ClientOrderId:{order.ClientOrderId}");
-                        return;
-                    }
-                    //this._logger.LogInformation($"Order Update {order.ToJson()}");
-                    dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                    dbOrder.Status = order.Status.GetDescription();
-                    dbOrder.AvgPrice = order.AvgPrice;
-                    await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status", "AvgPrice" });
+                    if (order.Status == OrderStatus.Expired) return; 
                     if (order.Status == OrderStatus.Filled)
                     {
+                        using var scope = this._serviceProvider.CreateScope();
+                        using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
+                        var dbOrder = await dbAccessor.GetIQueryable<Entity.Order>().FirstOrDefaultAsync(x => x.ClientOrderId == order.ClientOrderId);
+                        if (dbOrder == null)
+                        {
+                            this._logger.LogInformation($"Order Not Found. ClientOrderId:{order.ClientOrderId}");
+                            return;
+                        }
+                        //this._logger.LogInformation($"Order Update {order.ToJson()}");
+                        dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                        dbOrder.Status = order.Status.GetDescription();
+                        dbOrder.AvgPrice = order.AvgPrice;
+                        await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status", "AvgPrice" });
                         dbOrder.FilledQuantity = dbOrder.Quantity;
                         await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "FilledQuantity" });
 
