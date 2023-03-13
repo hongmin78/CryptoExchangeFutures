@@ -10,5 +10,7 @@ namespace CEF.Common.Context
     {
         Task ExecuteAsync(CancellationToken ct = default);
         Task SyncExchangeDataAsync();
+
+        Task SyncAdlOrderAsync();
     }
 }

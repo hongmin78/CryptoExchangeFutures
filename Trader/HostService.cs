@@ -1,4 +1,5 @@
-﻿using CEF.Common.Context;
+﻿using CEF.Common;
+using CEF.Common.Context;
 using CEF.Common.Primitives;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
@@ -35,7 +36,11 @@ internal class HostService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         //var symbols = new List<string>() { "BTCUSDT", "ETHUSDT", "BCHUSDT", "XRPUSDT", "LTCUSDT", "LINKUSDT", "ATOMUSDT", "DOGEUSDT", "UNIUSDT", "AVAXUSDT", "FTMUSDT", "MATICUSDT" }; 
-        this._context.ExecuteAsync(stoppingToken); 
+        this._context.ExecuteAsync(stoppingToken);
+        JobHelper.SetIntervalJob(async () => 
+        {
+            await this._context.SyncAdlOrderAsync();
+        }, TimeSpan.FromMinutes(15));
         while (!stoppingToken.IsCancellationRequested)
         {
             try

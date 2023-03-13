@@ -85,14 +85,14 @@ namespace CEF.Common.Context
                                     future.Status = FutureStatus.Openning;
                                     future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                                     await this.UpdateFutureAsync(future, new List<string>() { "Status", "UpdateTime" });
-                                    await this._trader.OpenPositionAsync(future.Id, symbol, orderType, positionSide, quantity, null);
+                                    await this._trader.OpenPositionAsync(future.Id, symbol, orderType, positionSide, quantity, per15MinuteKlineIC.Close);
                                 },
                                 async (symbol, orderType, positionSide, quantity) =>
                                 {                                    
                                     future.Status = FutureStatus.Closing;
                                     future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                                     await this.UpdateFutureAsync(future, new List<string>() { "Status", "UpdateTime" });
-                                    await this._trader.ClosePositionAsync(future.Id, symbol, orderType, positionSide, quantity, null);
+                                    await this._trader.ClosePositionAsync(future.Id, symbol, orderType, positionSide, quantity, per15MinuteKlineIC.Close);
                                 });
                         }
                     }//);
@@ -487,6 +487,74 @@ namespace CEF.Common.Context
                     //            "UpdateTime" });
                     //}
                 }
+            }
+        }
+
+        public async Task SyncAdlOrderAsync()
+        {
+            using var scope = this._serviceProvider.CreateScope();
+            using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
+            var futures = await this.GetFuturesAsync();
+            var symbols= futures.Select(x => x.Symbol).Distinct();
+            foreach(var symbol in symbols)
+            {  
+                var orderResult = await this._exchange.GetAllOrdersAsync(symbol);
+                var adlOrders = orderResult.Data.Where(x => x.ClientOrderId == "adl_autoclose");
+                foreach(var adlOrder in adlOrders)
+                {
+                    var future = futures.FirstOrDefault(x => x.Symbol == symbol && x.Status == FutureStatus.None && x.PositionSide == (int)adlOrder.PositionSide);
+                    if (future == null) continue;
+                    var dbOrder = await dbAccessor.GetIQueryable<Entity.Order>().Where(x => x.Id == adlOrder.Id).FirstOrDefaultAsync();
+                    if(dbOrder == null)
+                    {
+                        var order = new Order()
+                        {
+                            Id = adlOrder.Id,
+                            AvgPrice = adlOrder.AvgPrice,
+                            FilledQuantity = adlOrder.Quantity,
+                            ClientOrderId = adlOrder.ClientOrderId,
+                            CreateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff"),
+                            Side = adlOrder.Side.GetDescription(),
+                            PositionSide = adlOrder.PositionSide.GetDescription(),
+                            Price = adlOrder.Price,
+                            Quantity = adlOrder.Quantity,
+                            Status = adlOrder.Status.GetDescription(),
+                            Symbol = symbol,
+                            Type = adlOrder.Type.GetDescription(),
+                            UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff"),
+                            OrderSide = "Close",
+                            FutureId = future.Id,
+                            PNL = (adlOrder.PositionSide == PositionSide.Long ? 1 : -1) * (adlOrder.AvgPrice - future.EntryPrice) * adlOrder.Quantity
+                        };
+                        await dbAccessor.InsertAsync(order);
+
+                        var avgPrice = order.AvgPrice;
+                        var entryPrice = future.EntryPrice; 
+                        future.PNL += order.PNL ?? 0;
+                        future.Size -= adlOrder.Quantity;
+                        future.AbleSize = future.Size;
+                        if (future.Size == 0)
+                        {
+                            future.EntryPrice = 0;
+                            future.LastTransactionOpenPrice = 0;
+                            future.LastTransactionOpenSize = 0;
+                            future.OrdersCount = 0; 
+                        } 
+                        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                        await this.UpdateFutureAsync(future, new List<string>() {
+                                "PNL",
+                                "Size",
+                                "AbleSize",
+                                "EntryPrice",
+                                "LastTransactionOpenPrice",
+                                "LastTransactionOpenSize",
+                                "OrdersCount",
+                                "UpdateTime" });
+                        this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide == 1 ? "Long" : "Short")}] ADL Close Position. Entry Price:{entryPrice}, Close Price:{avgPrice}, PNL:{order.PNL ?? 0} USDT.");
+                        futures = await this.GetFuturesAsync();
+                    } 
+                }
+                await Task.Delay(1000);
             }
         }
 

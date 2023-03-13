@@ -234,6 +234,83 @@ namespace CEF.Common.Exchange
             };
         }
 
+        public async Task<CallResult<IEnumerable<FutureOrder>>> GetAllOrdersAsync(string symbol)
+        {
+            var result = await this.Client.UsdFuturesApi.Trading.GetOrdersAsync(symbol);
+            var balances = result.Data?.Select(x => new FutureOrder()
+            {
+                AvgPrice = x.AvgPrice,
+                ClientOrderId = x.ClientOrderId,
+                Id = x.Id,
+                Price = x.Price,
+                Quantity = x.Quantity,
+                ReduceOnly = x.ReduceOnly,
+                Symbol = x.Symbol,
+                UpdateTime = x.UpdateTime,
+                PositionSide = x.PositionSide switch
+                {
+                    Binance.Net.Enums.PositionSide.Short => PositionSide.Short,
+                    Binance.Net.Enums.PositionSide.Both => PositionSide.Both,
+                    Binance.Net.Enums.PositionSide.Long => PositionSide.Long,
+                    _ => throw new NotSupportedException($"不支持类型{x.PositionSide}"),
+                },
+                Type = x.Type switch
+                {
+                    Binance.Net.Enums.FuturesOrderType.Market => OrderType.Market,
+                    Binance.Net.Enums.FuturesOrderType.TakeProfitMarket => OrderType.TakeProfitMarket,
+                    Binance.Net.Enums.FuturesOrderType.StopMarket => OrderType.StopMarket,
+                    Binance.Net.Enums.FuturesOrderType.Liquidation => OrderType.Liquidation,
+                    Binance.Net.Enums.FuturesOrderType.TakeProfit => OrderType.TakeProfit,
+                    Binance.Net.Enums.FuturesOrderType.Limit => OrderType.Limit,
+                    Binance.Net.Enums.FuturesOrderType.Stop => OrderType.Stop,
+                    Binance.Net.Enums.FuturesOrderType.TrailingStopMarket => OrderType.TrailingStopMarket,
+                    _ => throw new NotSupportedException($"不支持类型{x.Type}."),
+                },
+                Side = x.Side switch
+                {
+                    Binance.Net.Enums.OrderSide.Buy => OrderSide.Buy,
+                    Binance.Net.Enums.OrderSide.Sell => OrderSide.Sell,
+                    _ => throw new NotSupportedException($"不支持类型{x.Side}."),
+                },
+                Status = x.Status switch
+                {
+                    Binance.Net.Enums.OrderStatus.Adl => OrderStatus.Adl,
+                    Binance.Net.Enums.OrderStatus.Expired => OrderStatus.Expired,
+                    Binance.Net.Enums.OrderStatus.Insurance => OrderStatus.Insurance,
+                    Binance.Net.Enums.OrderStatus.Canceled => OrderStatus.Canceled,
+                    Binance.Net.Enums.OrderStatus.Filled => OrderStatus.Filled,
+                    Binance.Net.Enums.OrderStatus.New => OrderStatus.New,
+                    Binance.Net.Enums.OrderStatus.PartiallyFilled => OrderStatus.PartiallyFilled,
+                    Binance.Net.Enums.OrderStatus.PendingCancel => OrderStatus.PendingCancel,
+                    Binance.Net.Enums.OrderStatus.Rejected => OrderStatus.Rejected,
+                    _ => throw new NotSupportedException($"不支持类型{x.Status}."),
+                },
+                TimeInForce = x.TimeInForce switch
+                {
+                    Binance.Net.Enums.TimeInForce.GoodTillCanceled => TimeInForce.GoodTillCanceled,
+                    Binance.Net.Enums.TimeInForce.GoodTillExpiredOrCanceled => TimeInForce.GoodTillExpiredOrCanceled,
+                    Binance.Net.Enums.TimeInForce.ImmediateOrCancel => TimeInForce.ImmediateOrCancel,
+                    Binance.Net.Enums.TimeInForce.FillOrKill => TimeInForce.FillOrKill,
+                    Binance.Net.Enums.TimeInForce.GoodTillCrossing => TimeInForce.GoodTillCrossing,
+                    _ => throw new NotSupportedException($"不支持类型{x.TimeInForce}."),
+                },
+                QuantityFilled = x.QuantityFilled,
+                LastFilledQuantity = x.LastFilledQuantity,
+                BaseQuantityFilled = x.BaseQuantityFilled,
+                ClosePosition = x.ClosePosition,
+                CreateTime = x.CreateTime,
+                Pair = x.Pair,
+                QuoteQuantityFilled = x.QuoteQuantityFilled,
+            });
+            return new CallResult<IEnumerable<FutureOrder>>()
+            {
+                Success = result.Success,
+                Data = balances,
+                ErrorCode = result.Error?.Code,
+                Msg = result.Error?.Message
+            };
+        }
+
         public async Task<CallResult<FutureOrder>> GetOrderAsync(string symbol, long? orderId = null, string? origClientOrderId = null)
         {
             var result = await this.Client.UsdFuturesApi.Trading.GetOrderAsync(symbol, orderId, origClientOrderId);

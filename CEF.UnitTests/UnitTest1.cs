@@ -60,6 +60,10 @@ namespace CEF.UnitTests
         public void test2() 
         {
             var exchange = Services.CreateScope().ServiceProvider.GetService<IExchange>(); 
+            var orders = exchange.GetAllOrdersAsync("ATOMUSDT").GetAwaiter().GetResult();
+            var filterOrders = orders.Data.Where(x => x.ClientOrderId == "adl_autoclose");
+            Assert.Pass();
+
         }
     }
 }

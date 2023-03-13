@@ -46,6 +46,8 @@ namespace CEF.Common.Exchange
             long? orderId = null, 
             string? origClientOrderId = null);
 
+        Task<CallResult<IEnumerable<FutureOrder>>> GetAllOrdersAsync(string symbol);
+
         Task<CallResult<FutureOrder>> OpenPositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null, string? newClientOrderId = null);
 
         Task<CallResult<FutureOrder>> ClosePositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null, string? newClientOrderId = null);
