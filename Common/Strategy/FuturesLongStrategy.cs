@@ -39,18 +39,18 @@ namespace CEF.Common.Strategy
                 else if (future.OrdersCount == 1)
                 {
                     if (((future.LastTransactionOpenPrice - per15MinuteIndexedOhlcv.Close) / future.LastTransactionOpenPrice) > future.SafetyOrderPriceDeviation &&
-                        ((future.LastTransactionOpenPrice - per15MinuteIndexedOhlcv.Close) / future.LastTransactionOpenPrice) < 0.1m &&
+                        ((future.LastTransactionOpenPrice - per15MinuteIndexedOhlcv.Close) / future.LastTransactionOpenPrice) < 0.03m &&
                        per15MinuteIndexedOhlcv.Prev.Close > per15MinuteIndexedOhlcv.Prev.Open)
                         await openFunc?.Invoke(future.Symbol, OrderType.Market, Side, future.SafetyOrderSize);
-                    else if (((future.LastTransactionOpenPrice - per15MinuteIndexedOhlcv.Close) / future.LastTransactionOpenPrice) > 0.1m &&
+                    else if (((future.LastTransactionOpenPrice - per15MinuteIndexedOhlcv.Close) / future.LastTransactionOpenPrice) > 0.03m &&
                         fourHourlyIndexedOhlcv.Prev.Close > fourHourlyIndexedOhlcv.Prev.Open)
                         await openFunc?.Invoke(future.Symbol, OrderType.Market, Side, future.SafetyOrderSize);
                 }
                 else if (future.OrdersCount < (future.MaxSafetyOrdersCount + 1))
                 {
-                    if (((future.LastTransactionOpenPrice - per15MinuteIndexedOhlcv.Close) / future.LastTransactionOpenPrice) > 0.1m &&
+                    if (((future.LastTransactionOpenPrice - per15MinuteIndexedOhlcv.Close) / future.LastTransactionOpenPrice) > (future.SafetyOrderPriceDeviation * future.SafetyOrderPriceScale *(future.OrdersCount - 1)) &&
                        fourHourlyIndexedOhlcv.Prev.Close > fourHourlyIndexedOhlcv.Prev.Open)
-                        await openFunc?.Invoke(future.Symbol, OrderType.Market, Side, future.SafetyOrderSize * future.SafetyOrderVolumeScale);
+                        await openFunc?.Invoke(future.Symbol, OrderType.Market, Side, future.SafetyOrderSize * future.SafetyOrderVolumeScale * (future.OrdersCount - 1));
                 }
             }
         }
