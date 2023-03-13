@@ -348,6 +348,8 @@ namespace CEF.Common.Context
                     continue;
                 }
                 var order = orderResult.Data;
+                if (order.Status == OrderStatus.New) continue;
+
                 dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                 dbOrder.Status = order.Status.GetDescription();
                 dbOrder.AvgPrice = order.AvgPrice;
@@ -470,7 +472,7 @@ namespace CEF.Common.Context
                     else
                         this._logger.LogError($"错误的合约配置状态{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
                 }
-                else if (order.Status != OrderStatus.PartiallyFilled)
+                else if (order.Status != OrderStatus.PartiallyFilled && order.Status != OrderStatus.New)
                 {
                     this._logger.LogError($"定单状态异常. orderId:{order.Id}");
                     this._logger.LogInformation($"{ order.ToJson()}");
