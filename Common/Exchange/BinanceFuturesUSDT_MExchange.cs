@@ -463,7 +463,7 @@ namespace CEF.Common.Exchange
                     PositionSide.Long => Binance.Net.Enums.PositionSide.Long,
                     _ => throw new NotSupportedException($"不支持类型{side},且仅可选择 LONG 或 SHORT"),
                 } : null,
-                null,
+                orderType == OrderType.Market ? null : Binance.Net.Enums.TimeInForce.GoodTillCanceled,
                 dualSidePosition ? null : false,
                 newClientOrderId);
 
@@ -579,7 +579,7 @@ namespace CEF.Common.Exchange
                     PositionSide.Long => Binance.Net.Enums.PositionSide.Long,
                     _ => throw new NotSupportedException($"不支持类型{side},且仅可选择 LONG 或 SHORT"),
                 } : null,
-                null,
+                orderType == OrderType.Market ? null : Binance.Net.Enums.TimeInForce.GoodTillCanceled,
                 dualSidePosition ? null : true,
                 newClientOrderId);
 
