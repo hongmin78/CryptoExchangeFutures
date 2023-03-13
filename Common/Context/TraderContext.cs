@@ -85,14 +85,14 @@ namespace CEF.Common.Context
                                     future.Status = FutureStatus.Openning;
                                     future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                                     await this.UpdateFutureAsync(future, new List<string>() { "Status", "UpdateTime" });
-                                    await this._trader.OpenPositionAsync(future.Id, symbol, orderType, positionSide, quantity, per15MinuteKlineIC.Close);
+                                    await this._trader.OpenPositionAsync(future.Id, symbol, orderType, positionSide, quantity, orderType == OrderType.Market ? null : per15MinuteKlineIC.Close);
                                 },
                                 async (symbol, orderType, positionSide, quantity) =>
                                 {                                    
                                     future.Status = FutureStatus.Closing;
                                     future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                                     await this.UpdateFutureAsync(future, new List<string>() { "Status", "UpdateTime" });
-                                    await this._trader.ClosePositionAsync(future.Id, symbol, orderType, positionSide, quantity, per15MinuteKlineIC.Close);
+                                    await this._trader.ClosePositionAsync(future.Id, symbol, orderType, positionSide, quantity, orderType == OrderType.Market ? null : per15MinuteKlineIC.Close);
                                 });
                         }
                     }//);
