@@ -80,7 +80,7 @@ static async Task<IResult> GetFuturesImpl(string? symbol, bool? enable)
         futures = futures.Where(x => x.Symbol.Contains(symbol)).ToList();
     if(enable??false)
         futures = futures.Where(x => x.IsEnabled == 1).ToList();
-    futures = futures.OrderBy(x=>x.Symbol).ToList();
+    futures = futures.OrderBy(x=>x.Symbol).ThenByDescending(x=>x.PositionSide).ToList();
     sb.Append("<html>");
     sb.Append("<head></head>"); 
     sb.Append("<body>");
