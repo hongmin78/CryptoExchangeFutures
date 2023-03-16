@@ -236,7 +236,7 @@ namespace CEF.Common.Exchange
 
         public async Task<CallResult<IEnumerable<FutureOrder>>> GetAllOrdersAsync(string symbol)
         {
-            var result = await this.Client.UsdFuturesApi.Trading.GetOrdersAsync(symbol);
+            var result = await this.Client.UsdFuturesApi.Trading.GetOrdersAsync(symbol, receiveWindow:5000);
             var balances = result.Data?.Select(x => new FutureOrder()
             {
                 AvgPrice = x.AvgPrice,
@@ -313,9 +313,9 @@ namespace CEF.Common.Exchange
 
         public async Task<CallResult<FutureOrder>> GetOrderAsync(string symbol, long? orderId = null, string? origClientOrderId = null)
         {
-            var result = await this.Client.UsdFuturesApi.Trading.GetOpenOrderAsync(symbol, orderId, origClientOrderId);
+            var result = await this.Client.UsdFuturesApi.Trading.GetOpenOrderAsync(symbol, orderId, origClientOrderId, receiveWindow:5000);
             if(!result.Success)
-                result = await this.Client.UsdFuturesApi.Trading.GetOrderAsync(symbol, orderId, origClientOrderId);
+                result = await this.Client.UsdFuturesApi.Trading.GetOrderAsync(symbol, orderId, origClientOrderId, receiveWindow:5000);
             return new CallResult<FutureOrder>()
             {
                 Success = result.Success,
@@ -428,7 +428,7 @@ namespace CEF.Common.Exchange
 
         public async Task<CallResult<FutureOrder>> OpenPositionAsync(string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null, string? newClientOrderId = null)
         {
-            var positionModeResult = await this.Client.UsdFuturesApi.Account.GetPositionModeAsync();
+            var positionModeResult = await this.Client.UsdFuturesApi.Account.GetPositionModeAsync(receiveWindow:5000);
             if (!positionModeResult.Success)
                return new CallResult<FutureOrder>()
                 {
@@ -467,7 +467,7 @@ namespace CEF.Common.Exchange
                 } : null,
                 orderType == OrderType.Market ? null : Binance.Net.Enums.TimeInForce.GoodTillCanceled,
                 dualSidePosition ? null : false,
-                newClientOrderId);
+                newClientOrderId, receiveWindow : 5000);
 
             return new CallResult<FutureOrder>()
             {
@@ -583,7 +583,7 @@ namespace CEF.Common.Exchange
                 } : null,
                 orderType == OrderType.Market ? null : Binance.Net.Enums.TimeInForce.GoodTillCanceled,
                 dualSidePosition ? null : true,
-                newClientOrderId);
+                newClientOrderId, receiveWindow:5000);
 
             return new CallResult<FutureOrder>()
             {

@@ -64,8 +64,7 @@ namespace CEF.Common.Context
                             this._logger.LogError($"未能在交易所发现交易对{symbol}.");
                             continue;
                         }
-                        //var future = futures.FirstOrDefault(x => x.Symbol == symbol && x.PositionSide == (int)strategy.Side && x.Status == FutureStatus.None);
-                        if (future.IsEnabled != 1 || future.Status != FutureStatus.None)
+                        if (future.Status != FutureStatus.None)
                             continue;
                         foreach (var strategy in this._strategyList)
                         { 
@@ -80,6 +79,7 @@ namespace CEF.Common.Context
                                 fourHourlyKlinesIC,
                                 async (symbol, orderType, positionSide, amount) =>
                                 {
+                                    if (future.IsEnabled != 1 && future.OrdersCount == 0) return;
                                     var positionCount = futures.Count(x => x.OrdersCount > 0 || x.Status != FutureStatus.None);
                                     if (future.OrdersCount == 0 && positionCount >= this.MaxFutureCount) return;
 
