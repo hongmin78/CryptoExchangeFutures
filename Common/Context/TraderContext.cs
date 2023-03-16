@@ -347,7 +347,7 @@ namespace CEF.Common.Context
                     //if (DateTime.Now.Subtract(DateTime.Parse(dbOrder.CreateTime.Remove(dbOrder.CreateTime.Length - 4))).TotalSeconds < 60)
                     //    continue;
                     this._logger.LogError($"无法从交易所获取定单详细. orderId:{dbOrder.Id}.  errorcode:{orderResult.ErrorCode} msg:{orderResult.Msg}");
-                    this._logger.LogInformation($"{orderResult.ToJson()}");
+                    this._logger.LogInformation($"{dbOrder.ToJson()}");
                     //if (orderResult.ErrorCode == -2013)
                     //{
                     //    dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
