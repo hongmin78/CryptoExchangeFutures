@@ -37,10 +37,10 @@ internal class HostService : BackgroundService
     {
         //var symbols = new List<string>() { "BTCUSDT", "ETHUSDT", "BCHUSDT", "XRPUSDT", "LTCUSDT", "LINKUSDT", "ATOMUSDT", "DOGEUSDT", "UNIUSDT", "AVAXUSDT", "FTMUSDT", "MATICUSDT" }; 
         this._context.ExecuteAsync(stoppingToken);
-        //JobHelper.SetIntervalJob(async () => 
-        //{
-        //    await this._context.SyncAdlOrderAsync();
-        //}, TimeSpan.FromMinutes(15));
+        JobHelper.SetIntervalJob(async () =>
+        {
+            await this._context.SyncAdlOrderAsync();
+        }, TimeSpan.FromMinutes(15));
         while (!stoppingToken.IsCancellationRequested)
         {
             try
