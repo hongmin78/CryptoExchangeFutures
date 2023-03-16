@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
@@ -441,5 +442,25 @@ namespace EFCore.Sharding
         /// <param name="selector">表达式</param>
         /// <returns></returns>
         Task<long?> SumAsync(Expression<Func<T, long?>> selector);
+
+       /// <summary>
+       /// 分表分组
+       /// </summary>
+       /// <typeparam name="TKey"></typeparam>
+       /// <typeparam name="TResult"></typeparam>
+       /// <param name="keySelector"></param>
+       /// <param name="selector"></param>
+       /// <returns></returns>
+        Task<IEnumerable<TResult>> GroupBy<TKey, TResult>(Expression<Func<T, TKey>> keySelector, Expression<Func<IGrouping<TKey, T>, TResult>> selector);
+        /// <summary>
+        /// 分组加where条件
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="predicate"></param>
+        /// <param name="keySelector"></param>
+        /// <param name="selector"></param>
+        /// <returns></returns>
+        Task<IEnumerable<TResult>> GroupBy<TKey, TResult>(Expression<Func<T, bool>> predicate, Expression<Func<T, TKey>> keySelector, Expression<Func<IGrouping<TKey, T>, TResult>> selector);
     }
 }

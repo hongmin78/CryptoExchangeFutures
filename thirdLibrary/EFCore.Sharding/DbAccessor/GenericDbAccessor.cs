@@ -255,6 +255,12 @@ namespace EFCore.Sharding
         }
         public override async Task<int> UpdateAsync<T>(List<T> entities, List<string> properties, bool tracking = false)
         {
+            #region 带有属性DataDeleteLog无法删除判断 ,无此属性会跳过
+            if (_db.ChangeTracker.Entries().Count() != 0)
+            {
+                _db.Detach();
+            }
+            #endregion 
             entities.ForEach(aEntity =>
             {
                 properties.ForEach(aProperty =>

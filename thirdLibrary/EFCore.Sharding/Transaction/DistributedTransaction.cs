@@ -40,7 +40,11 @@ namespace EFCore.Sharding
         {
             OpenTransaction = true;
             _isolationLevel = isolationLevel;
-            _repositories.ForEach(aDbAccessor => aDbAccessor.BeginTransaction(isolationLevel));
+            foreach (var aDbAccessor in _repositories)
+            {
+                if (aDbAccessor != null)
+                    aDbAccessor.BeginTransaction(isolationLevel);
+            }
         }
 
         public async Task BeginTransactionAsync(IsolationLevel isolationLevel)
@@ -49,7 +53,8 @@ namespace EFCore.Sharding
             _isolationLevel = isolationLevel;
             foreach (var aDbAccessor in _repositories)
             {
-                await aDbAccessor.BeginTransactionAsync(isolationLevel);
+                if (aDbAccessor != null)
+                    await aDbAccessor.BeginTransactionAsync(isolationLevel);
             }
         }
 
@@ -81,18 +86,18 @@ namespace EFCore.Sharding
 
         public void CommitTransaction()
         {
-            _repositories.ForEach(x => x.CommitTransaction());
+            _repositories.ForEach(x => x?.CommitTransaction());
         }
 
         public void RollbackTransaction()
         {
-            _repositories.ForEach(x => x.RollbackTransaction());
+            _repositories.ForEach(x => x?.RollbackTransaction());
         }
 
         public void DisposeTransaction()
         {
             OpenTransaction = false;
-            _repositories.ForEach(x => x.DisposeTransaction());
+            _repositories.ForEach(x => x?.DisposeTransaction());
         }
 
         public async Task<(bool Success, Exception ex)> RunTransactionAsync(Func<Task> action, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)

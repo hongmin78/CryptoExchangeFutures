@@ -116,6 +116,7 @@ namespace EFCore.Sharding
             _disposed = true;
             _writeDb?.Dispose();
             _readDb?.Dispose();
+            _allDbs?.ForEach(x => x.db?.Dispose());
         }
         public override void BulkInsert<T>(List<T> entities, string tableName = null)
         {

@@ -107,7 +107,7 @@ namespace CEF.Common.Context
                 }
                 finally
                 {
-                    await Task.Delay(TimeSpan.FromMilliseconds(300));
+                    await Task.Delay(TimeSpan.FromMilliseconds(1200));
                 }
             }
         }

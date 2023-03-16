@@ -19,7 +19,7 @@ namespace EFCore.Sharding
         /// <param name="func">任务</param>
         public static void RunSync(Func<Task> func)
         {
-            _myTaskFactory.StartNew(func).Unwrap().GetAwaiter().GetResult();
+            _myTaskFactory.StartNew(func).Unwrap().ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -30,7 +30,7 @@ namespace EFCore.Sharding
         /// <returns></returns>
         public static TResult RunSync<TResult>(Func<Task<TResult>> func)
         {
-            return _myTaskFactory.StartNew(func).Unwrap().GetAwaiter().GetResult();
+            return _myTaskFactory.StartNew(func).Unwrap().ConfigureAwait(false).GetAwaiter().GetResult();
         }
     }
 }

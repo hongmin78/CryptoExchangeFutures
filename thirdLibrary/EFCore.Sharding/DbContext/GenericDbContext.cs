@@ -20,11 +20,6 @@ namespace EFCore.Sharding
     public class GenericDbContext : DbContext
     {
         /// <summary>
-        /// 当前DbContext所在注入周期
-        /// </summary>
-        public IServiceProvider ServiceProvider;
-
-        /// <summary>
         /// DbContext原生配置
         /// </summary>
         public DbContextOptions DbContextOption { get; }
@@ -39,9 +34,8 @@ namespace EFCore.Sharding
         /// </summary>
         public DbContextParamters Paramter { get; }
 
-        internal readonly string CreateStackTrace;
+        internal readonly StackTrace CreateStackTrace;
         internal readonly DateTimeOffset CreateTime;
-        internal string FirstCallStackTrace;
 
         /// <summary>
         /// 
@@ -49,14 +43,11 @@ namespace EFCore.Sharding
         /// <param name="contextOptions"></param>
         /// <param name="paramter"></param>
         /// <param name="shardingOptions"></param>
-        /// <param name="serviceProvider"></param>
-        public GenericDbContext(DbContextOptions contextOptions, DbContextParamters paramter, EFCoreShardingOptions shardingOptions, IServiceProvider serviceProvider)
+        public GenericDbContext(DbContextOptions contextOptions, DbContextParamters paramter, EFCoreShardingOptions shardingOptions)
             : base(contextOptions)
         {
-            ServiceProvider = serviceProvider;
-
             CreateTime = DateTimeOffset.Now;
-            CreateStackTrace = Environment.StackTrace;
+            CreateStackTrace = new StackTrace(true);
             Cache.DbContexts.Add(this);
 
             DbContextOption = contextOptions;
@@ -71,7 +62,7 @@ namespace EFCore.Sharding
         /// </summary>
         /// <param name="dbContext"></param>
         public GenericDbContext(GenericDbContext dbContext)
-            : this(dbContext.DbContextOption, dbContext.Paramter, dbContext.ShardingOption, dbContext.ServiceProvider)
+            : this(dbContext.DbContextOption, dbContext.Paramter, dbContext.ShardingOption)
         {
 
         }
@@ -84,8 +75,6 @@ namespace EFCore.Sharding
         /// <param name="modelBuilder"></param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            FirstCallStackTrace = Environment.StackTrace;
-
             List<Type> entityTypes;
             if (Paramter.EntityTypes?.Length > 0)
             {
@@ -202,7 +191,7 @@ namespace EFCore.Sharding
 
             if (ShardingOption.OnSaveChanges != null)
             {
-                AsyncHelper.RunSync(() => ShardingOption.OnSaveChanges?.Invoke(ServiceProvider, this, async () =>
+                AsyncHelper.RunSync(() => ShardingOption.OnSaveChanges?.Invoke(Cache.ServiceProvider, this, async () =>
                 {
                     count = await base.SaveChangesAsync();
                 }));
@@ -226,7 +215,7 @@ namespace EFCore.Sharding
 
             if (ShardingOption.OnSaveChanges != null)
             {
-                await ShardingOption.OnSaveChanges?.Invoke(ServiceProvider, this, async () =>
+                await ShardingOption.OnSaveChanges?.Invoke(Cache.ServiceProvider, this, async () =>
                 {
                     count = await base.SaveChangesAsync();
                 });

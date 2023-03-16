@@ -19,6 +19,8 @@ namespace EFCore.Sharding
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly EFCoreShardingOptions _shardingOptions;
+        private readonly ILogger _logger;
+
         /// <summary>
         /// 构造函数
         /// </summary>
@@ -32,7 +34,8 @@ namespace EFCore.Sharding
                 new DiagnosticObserver(serviceProvider.GetService<ILoggerFactory>(),
                 _shardingOptions.MinCommandElapsedMilliseconds));
 
-            Cache.RootServiceProvider = serviceProvider;
+            Cache.ServiceProvider = serviceProvider;
+            _logger = serviceProvider.GetService<ILoggerFactory>()?.CreateLogger(GetType());
         }
 
         /// <summary>
@@ -42,20 +45,18 @@ namespace EFCore.Sharding
         /// <returns></returns>
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            using var scope = _serviceProvider.CreateScope();
-            EFCoreShardingOptions.Bootstrapper?.Invoke(scope.ServiceProvider);
+            EFCoreShardingOptions.Bootstrapper?.Invoke(_serviceProvider);
 
             //长时间未释放监控,5分钟
-            JobHelper.SetIntervalJob(() =>
-            {
-                var list = Cache.DbContexts.Where(x => (DateTimeOffset.Now - x.CreateTime).TotalMinutes > 5).ToList();
-                list.ForEach(x =>
-                {
-                    var logger = x.ServiceProvider.GetService<ILoggerFactory>()?.CreateLogger(GetType());
-                    logger?.LogWarning("DbContext长时间({ElapsedMinutes}m)未释放 CreateStackTrace:{CreateStackTrace} FirstCallStackTrace:{FirstCallStackTrace}",
-                        (long)(DateTimeOffset.Now - x.CreateTime).TotalMinutes, x.CreateStackTrace, x.FirstCallStackTrace);
-                });
-            }, TimeSpan.FromMinutes(5));
+            //JobHelper.SetIntervalJob(() =>
+            //{
+            //    var list = Cache.DbContexts.Where(x => (DateTimeOffset.Now - x.CreateTime).TotalMinutes > 5).ToList();
+            //    list.ForEach(x =>
+            //    {
+            //        _logger?.LogWarning("DbContext长时间({ElapsedMinutes}m)未释放 StackTrace:{StackTrace}",
+            //            (DateTimeOffset.Now - x.CreateTime).TotalMinutes, x.CreateStackTrace);
+            //    });
+            //}, TimeSpan.FromMinutes(5));
 
             return Task.CompletedTask;
         }

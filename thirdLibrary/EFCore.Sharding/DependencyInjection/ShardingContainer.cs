@@ -78,16 +78,23 @@ namespace EFCore.Sharding
         }
         private void AddPhysicTable<TEntity>(string suffix, string sourceName)
         {
-            var entityType = typeof(TEntity);
-
-            if (!_physicTables.Any(x => x.EntityType == entityType && x.Suffix == suffix && x.DataSourceName == sourceName))
+            try
             {
-                _physicTables.Add(new PhysicTable
+                var entityType = typeof(TEntity);
+
+                if (!_physicTables.Any(x => x.EntityType == entityType && x.Suffix == suffix && x.DataSourceName == sourceName))
                 {
-                    DataSourceName = sourceName,
-                    EntityType = entityType,
-                    Suffix = suffix
-                });
+                    _physicTables.Add(new PhysicTable
+                    {
+                        DataSourceName = sourceName,
+                        EntityType = entityType,
+                        Suffix = suffix
+                    });
+                }
+            }
+            catch
+            {
+                AddPhysicTable<TEntity>(suffix, sourceName);
             }
         }
         private void CreateTable<TEntity>(IServiceProvider serviceProvider, string sourceName, string suffix)
@@ -107,9 +114,6 @@ namespace EFCore.Sharding
             var allTableSuffixs = allTables.Select(x => x.suffix).ToList();
             var findSuffixs = ShardingHelper.FilterTable(source, allTableSuffixs, rule);
             allTables = allTables.Where(x => findSuffixs.Contains(x.suffix)).ToList();
-#if DEBUG
-            Console.WriteLine($"访问分表:{string.Join(",", findSuffixs.Select(x => $"{absTable}_{x}"))}");
-#endif
             return allTables;
         }
         private void AddShardingTable(string absTableName, string fullTableName)

@@ -427,10 +427,67 @@ namespace EFCore.Sharding
         public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
         {
             var newSource = _source.Where(predicate);
-            return (await GetStatisDataAsync<bool>(x => EntityFrameworkQueryableExtensions.AnyAsync((dynamic)x), newSource))
+            return (await GetStatisDataAsync<bool>(x => EntityFrameworkQueryableExtensions.FirstAsync((dynamic)x), newSource))
                 .Any(x => x == true);
         }
 
+        public async Task<IEnumerable<TResult>> GroupBy<TKey, TResult>(Expression<Func<T, TKey>> keySelector, Expression<Func<IGrouping<TKey, T>, TResult>> selector)
+        {
+            var tables = _shardingConfig.GetReadTables(_source);
+            List<Task<List<TResult>>> tasks = new List<Task<List<TResult>>>();
+            SynchronizedCollection<IDbAccessor> dbs = new SynchronizedCollection<IDbAccessor>();
+            tasks = tables.Select(aTable =>
+           {
+               IDbAccessor db;
+               if (_shardingDb.OpenedTransaction)
+                   db = _shardingDb.GetMapDbAccessor(aTable.conString, aTable.dbType, aTable.suffix);
+               else
+                   db = _dbFactory.GetDbAccessor(new DbContextParamters
+                   {
+                       ConnectionString = aTable.conString,
+                       DbType = aTable.dbType,
+                       Suffix = aTable.suffix
+                   });
+
+               dbs.Add(db);
+               var targetIQ = db.GetIQueryable<T>().GroupBy(keySelector).Select(selector);
+               return targetIQ.ToListAsync<TResult>();
+           }).ToList();
+            var eachTData = await Task.WhenAll(tasks);
+
+            if (!_shardingDb.OpenedTransaction)
+                dbs.ForEach(x => x.Dispose());
+            return eachTData.SelectMany(x => x);
+        }
+
+        public async Task<IEnumerable<TResult>> GroupBy<TKey, TResult>(Expression<Func<T, bool>> predicate, Expression<Func<T, TKey>> keySelector, Expression<Func<IGrouping<TKey, T>, TResult>> selector)
+        {
+            var tables = _shardingConfig.GetReadTables(_source);
+            List<Task<List<TResult>>> tasks = new List<Task<List<TResult>>>();
+            SynchronizedCollection<IDbAccessor> dbs = new SynchronizedCollection<IDbAccessor>();
+            tasks = tables.Select(aTable =>
+            {
+                IDbAccessor db;
+                if (_shardingDb.OpenedTransaction)
+                    db = _shardingDb.GetMapDbAccessor(aTable.conString, aTable.dbType, aTable.suffix);
+                else
+                    db = _dbFactory.GetDbAccessor(new DbContextParamters
+                    {
+                        ConnectionString = aTable.conString,
+                        DbType = aTable.dbType,
+                        Suffix = aTable.suffix
+                    });
+
+                dbs.Add(db);
+                var targetIQ = db.GetIQueryable<T>().Where(predicate).GroupBy(keySelector).Select(selector);
+                return targetIQ.ToListAsync<TResult>();
+            }).ToList();
+            var eachTData = await Task.WhenAll(tasks);
+
+            if (!_shardingDb.OpenedTransaction)
+                dbs.ForEach(x => x.Dispose());
+            return eachTData.SelectMany(x => x);
+        }
         #endregion
     }
 }

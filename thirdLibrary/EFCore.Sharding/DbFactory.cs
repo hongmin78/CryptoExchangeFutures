@@ -14,12 +14,10 @@ namespace EFCore.Sharding
     {
         private readonly ILoggerFactory _loggerFactory;
         private readonly IOptionsMonitor<EFCoreShardingOptions> _optionsMonitor;
-        private readonly IServiceProvider _serviceProvider;
-        public DbFactory(ILoggerFactory loggerFactory, IOptionsMonitor<EFCoreShardingOptions> optionsMonitor, IServiceProvider serviceProvider)
+        public DbFactory(ILoggerFactory loggerFactory, IOptionsMonitor<EFCoreShardingOptions> optionsMonitor)
         {
             _loggerFactory = loggerFactory;
             _optionsMonitor = optionsMonitor;
-            _serviceProvider = serviceProvider;
         }
 
         public void CreateTable(string conString, DatabaseType dbType, Type entityType, string suffix)
@@ -72,7 +70,7 @@ namespace EFCore.Sharding
             builder.ReplaceService<IModelCacheKeyFactory, GenericModelCacheKeyFactory>();
             builder.ReplaceService<IMigrationsModelDiffer, ShardingMigration>();
 
-            return new GenericDbContext(builder.Options, dbContextParamters, eFCoreShardingOptions, _serviceProvider);
+            return new GenericDbContext(builder.Options, dbContextParamters, eFCoreShardingOptions);
         }
 
         public static AbstractProvider GetProvider(DatabaseType databaseType)
