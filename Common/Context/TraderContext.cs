@@ -17,8 +17,9 @@ using static System.Formats.Asn1.AsnWriter;
 
 namespace CEF.Common.Context
 {
-    public class TraderContext : IContext, ITransientDependency
+    public class TraderContext : IContext, ISingletonDependency
     {
+        public int MaxFutureCount { set; get; } = 1;
         private readonly string futuresMemoryKey = "GetFuturesAsync";
         private readonly string klineDataMemoryKey = "GetKlineDataAsync_{0}_{1}";
         private readonly ILogger<TraderContext> _logger;
@@ -79,6 +80,9 @@ namespace CEF.Common.Context
                                 fourHourlyKlinesIC,
                                 async (symbol, orderType, positionSide, amount) =>
                                 {
+                                    var positionCount = futures.Count(x=>x.OrdersCount > 0);
+                                    if (future.OrdersCount == 0 && positionCount >= this.MaxFutureCount) return;
+
                                     var quantity = amount / per15MinuteKlineIC.Close;
                                     var multiple = Convert.ToInt32(quantity / futureInfo.MinTradeQuantity);
                                     quantity = (multiple + 1) * futureInfo.MinTradeQuantity;                                    
@@ -158,10 +162,16 @@ namespace CEF.Common.Context
                     {
                         using var scope = this._serviceProvider.CreateScope();
                         using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
-                        var dbOrder = await dbAccessor.GetIQueryable<Entity.Order>().FirstOrDefaultAsync(x => x.ClientOrderId == order.ClientOrderId);
+                        long orderId = -1;
+                        if (!long.TryParse(order.ClientOrderId, out orderId))
+                        {
+                            this._logger.LogInformation($"Order Not Found. {order.ToJson()}");
+                            return;
+                        }
+                        var dbOrder = await dbAccessor.GetIQueryable<Entity.Order>().FirstOrDefaultAsync(x => x.Id == orderId);
                         if (dbOrder == null)
                         {
-                            this._logger.LogInformation($"Order Not Found. ClientOrderId:{order.ClientOrderId}");
+                            this._logger.LogInformation($"Order Not Found. {order.ToJson()}");
                             return;
                         }
                         //this._logger.LogInformation($"Order Update {order.ToJson()}");
@@ -295,7 +305,7 @@ namespace CEF.Common.Context
             return result;
         }
 
-        async Task<IEnumerable<Future>> GetFuturesAsync()
+        public async Task<IEnumerable<Future>> GetFuturesAsync()
         { 
             //var result = await this._memoryCache.GetOrSetObjectAsync<IEnumerable<Future>>(futuresMemoryKey, async () =>
             //{
@@ -322,12 +332,12 @@ namespace CEF.Common.Context
             var futures = await this.GetFuturesAsync();
             var dbOrders = await dbAccessor.GetIQueryable<Entity.Order>().Where(x => x.Status != OrderStatus.Filled.GetDescription() && x.Status != OrderStatus.Invalid.GetDescription() && x.Status != OrderStatus.Expired.GetDescription()).ToListAsync();
             foreach (var dbOrder in dbOrders)
-            {
-                if (DateTime.Now.Subtract(DateTime.Parse(dbOrder.CreateTime.Remove(dbOrder.CreateTime.Length - 4))).TotalSeconds < 30)
-                    continue;
-                var orderResult = await this._exchange.GetOrderAsync(dbOrder.Symbol, null, dbOrder.ClientOrderId);
+            {                
+                var orderResult = await this._exchange.GetOrderAsync(dbOrder.Symbol, long.Parse(dbOrder.ClientOrderId));
                 if (!orderResult.Success)
-                {
+                {   
+                    if (DateTime.Now.Subtract(DateTime.Parse(dbOrder.CreateTime.Remove(dbOrder.CreateTime.Length - 4))).TotalSeconds < 60)
+                        continue;
                     this._logger.LogError($"无法从交易所获取定单详细. orderId:{dbOrder.Id}.  errorcode:{orderResult.ErrorCode} msg:{orderResult.Msg}");
                     this._logger.LogInformation($"{orderResult.ToJson()}");
                     if (orderResult.ErrorCode == -2013)
@@ -501,6 +511,11 @@ namespace CEF.Common.Context
             foreach(var symbol in symbols)
             {  
                 var orderResult = await this._exchange.GetAllOrdersAsync(symbol);
+                if (!orderResult.Success)
+                {
+                    this._logger.LogError($"获取{symbol}所有单错误. errorcode:{orderResult.ErrorCode}, message:{orderResult.Msg}");
+                    continue;
+                }
                 var adlOrders = orderResult.Data.Where(x => x.ClientOrderId == "adl_autoclose");
                 foreach(var adlOrder in adlOrders)
                 {

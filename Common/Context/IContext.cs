@@ -8,6 +8,7 @@ namespace CEF.Common.Context
 {
     public interface IContext
     {
+        int MaxFutureCount { set; get; }
         Task ExecuteAsync(CancellationToken ct = default);
         Task SyncExchangeDataAsync();
 
