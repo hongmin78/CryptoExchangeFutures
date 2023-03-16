@@ -80,7 +80,7 @@ namespace CEF.Common.Context
                                 fourHourlyKlinesIC,
                                 async (symbol, orderType, positionSide, amount) =>
                                 {
-                                    var positionCount = futures.Count(x=>x.OrdersCount > 0 && future.Status != FutureStatus.None);
+                                    var positionCount = futures.Count(x=>x.OrdersCount > 0 || x.Status != FutureStatus.None);
                                     if (future.OrdersCount == 0 && positionCount >= this.MaxFutureCount) return;
 
                                     var quantity = amount / per15MinuteKlineIC.Close;
