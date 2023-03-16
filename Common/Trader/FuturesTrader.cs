@@ -37,7 +37,7 @@ namespace CEF.Common.Trader
         }
 
 
-        public async Task ClosePositionAsync(long futureId, string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null)
+        public async Task<bool> ClosePositionAsync(long futureId, string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null)
         {
             using var scope = this._serviceProvider.CreateScope();
             using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
@@ -72,13 +72,14 @@ namespace CEF.Common.Trader
             }
             else
                 this._logger.LogError($"平仓失败. errorcode:{callResult.ErrorCode}, message:{callResult.Msg}, 参数:{symbol}/{orderType}/{side}/{quantity}/{price}");
+            return callResult.Success;
         }
 
-        public async Task OpenPositionAsync(long futureId, string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null)
+        public async Task<bool> OpenPositionAsync(long futureId, string symbol, OrderType orderType, PositionSide side, decimal? quantity, decimal? price = null)
         {
             using var scope = this._serviceProvider.CreateScope();
             using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
-            var clientOrderId = IdHelper.GetLongId(); 
+            var clientOrderId = IdHelper.GetLongId();
             var callResult = await this._exchange.OpenPositionAsync(symbol, orderType, side, quantity, price, clientOrderId.ToString());
             if (callResult.Success)
             {
@@ -109,6 +110,7 @@ namespace CEF.Common.Trader
             }
             else
                 this._logger.LogError($"开仓失败. errorcode:{callResult.ErrorCode}, message:{callResult.Msg}, 参数:{symbol}/{orderType}/{side}/{quantity}/{price}");
+            return callResult.Success;
         }
     }
 }

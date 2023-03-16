@@ -47,7 +47,7 @@ namespace CEF.Common.Context
         {           
             var symbols = (await this.GetFuturesAsync()).Select(x=>x.Symbol).Distinct();
             await SubscribeToKlineUpdatesAsync(symbols);
-            await SubscribeToUserDataUpdatesAsync();
+            //await SubscribeToUserDataUpdatesAsync();
             var futureInfoList = await this.GetSymbolsAsync();
             while (!ct.IsCancellationRequested)
             {
@@ -80,23 +80,29 @@ namespace CEF.Common.Context
                                 fourHourlyKlinesIC,
                                 async (symbol, orderType, positionSide, amount) =>
                                 {
-                                    var positionCount = futures.Count(x=>x.OrdersCount > 0 || x.Status != FutureStatus.None);
+                                    var positionCount = futures.Count(x => x.OrdersCount > 0 || x.Status != FutureStatus.None);
                                     if (future.OrdersCount == 0 && positionCount >= this.MaxFutureCount) return;
 
                                     var quantity = amount / per15MinuteKlineIC.Close;
                                     var multiple = Convert.ToInt32(quantity / futureInfo.MinTradeQuantity);
-                                    quantity = (multiple + 1) * futureInfo.MinTradeQuantity;                                    
-                                    future.Status = FutureStatus.Openning;
-                                    future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                                    await this.UpdateFutureAsync(future, new List<string>() { "Status", "UpdateTime" });
-                                    await this._trader.OpenPositionAsync(future.Id, symbol, orderType, positionSide, quantity, orderType == OrderType.Market ? null : per15MinuteKlineIC.Close);
+                                    quantity = (multiple + 1) * futureInfo.MinTradeQuantity;
+                                    var success = await this._trader.OpenPositionAsync(future.Id, symbol, orderType, positionSide, quantity, orderType == OrderType.Market ? null : per15MinuteKlineIC.Close);
+                                    if (success)
+                                    {
+                                        future.Status = FutureStatus.Openning;
+                                        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                                        await this.UpdateFutureAsync(future, new List<string>() { "Status", "UpdateTime" });
+                                    }
                                 },
                                 async (symbol, orderType, positionSide, quantity) =>
-                                {                                    
-                                    future.Status = FutureStatus.Closing;
-                                    future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                                    await this.UpdateFutureAsync(future, new List<string>() { "Status", "UpdateTime" });
-                                    await this._trader.ClosePositionAsync(future.Id, symbol, orderType, positionSide, quantity, orderType == OrderType.Market ? null : per15MinuteKlineIC.Close);
+                                {        
+                                    var success = await this._trader.ClosePositionAsync(future.Id, symbol, orderType, positionSide, quantity, orderType == OrderType.Market ? null : per15MinuteKlineIC.Close);
+                                    if (success)
+                                    {
+                                        future.Status = FutureStatus.Closing;
+                                        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                                        await this.UpdateFutureAsync(future, new List<string>() { "Status", "UpdateTime" });
+                                    }
                                 });
                         }
                     }//);
