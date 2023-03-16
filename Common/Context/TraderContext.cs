@@ -549,7 +549,7 @@ namespace CEF.Common.Context
                             UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff"),
                             OrderSide = "Close",
                             FutureId = future.Id,
-                            PNL = (adlOrder.PositionSide == PositionSide.Long ? 1 : -1) * (adlOrder.AvgPrice - future.EntryPrice) * adlOrder.Quantity
+                            PNL = future.EntryPrice == 0 ? 0 : (adlOrder.PositionSide == PositionSide.Long ? 1 : -1) * (adlOrder.AvgPrice - future.EntryPrice) * adlOrder.Quantity
                         };
                         await dbAccessor.InsertAsync(order);
                         if (future.Size > order.FilledQuantity)
