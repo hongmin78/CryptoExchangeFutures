@@ -333,13 +333,13 @@ namespace CEF.Common.Context
             var dbOrders = await dbAccessor.GetIQueryable<Entity.Order>().Where(x => x.Status != OrderStatus.Filled.GetDescription() && x.Status != OrderStatus.Invalid.GetDescription() && x.Status != OrderStatus.Expired.GetDescription()).ToListAsync();
             foreach (var dbOrder in dbOrders)
             {
-                if (DateTime.Now.Subtract(DateTime.Parse(dbOrder.CreateTime.Remove(dbOrder.CreateTime.Length - 4))).TotalSeconds < 15)
+                if (DateTime.Now.Subtract(DateTime.Parse(dbOrder.CreateTime.Remove(dbOrder.CreateTime.Length - 4))).TotalSeconds < 30)
                     continue;
                 var orderResult = await this._exchange.GetOrderAsync(dbOrder.Symbol, long.Parse(dbOrder.ClientOrderId));
                 if (!orderResult.Success)
                 {   
-                    if (DateTime.Now.Subtract(DateTime.Parse(dbOrder.CreateTime.Remove(dbOrder.CreateTime.Length - 4))).TotalSeconds < 60)
-                        continue;
+                    //if (DateTime.Now.Subtract(DateTime.Parse(dbOrder.CreateTime.Remove(dbOrder.CreateTime.Length - 4))).TotalSeconds < 60)
+                    //    continue;
                     this._logger.LogError($"无法从交易所获取定单详细. orderId:{dbOrder.Id}.  errorcode:{orderResult.ErrorCode} msg:{orderResult.Msg}");
                     this._logger.LogInformation($"{orderResult.ToJson()}");
                     //if (orderResult.ErrorCode == -2013)
