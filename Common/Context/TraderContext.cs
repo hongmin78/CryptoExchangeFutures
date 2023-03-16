@@ -238,7 +238,7 @@ namespace CEF.Common.Context
                             this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide==1 ? "Long" : "Short")}] Close Position. Entry Price:{entryPrice}, Open Price:{avgPrice}, PNL:{dbOrder.PNL ?? 0} USDT.");
                         }
                         else
-                            this._logger.LogError($"错误的合约配置状态{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
+                            this._logger.LogError($"错误的合约配置状态{order.Id}/{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
                     }
                 });
         }
@@ -423,7 +423,7 @@ namespace CEF.Common.Context
                         this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide == 1 ? "Long" : "Short")}] Close Position. Entry Price:{entryPrice}, Close Price:{avgPrice}, PNL:{dbOrder.PNL ?? 0} USDT.");
                     }
                     else
-                        this._logger.LogError($"错误的合约配置状态{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
+                        this._logger.LogError($"错误的合约配置状态{order.Id}/{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
                 }
                 else if (order.Status == OrderStatus.Expired)
                 {
@@ -480,7 +480,7 @@ namespace CEF.Common.Context
                         this._logger.LogError($"[{future.Symbol} {(future.PositionSide == 1 ? "Long" : "Short")}] Close Position. 仅部份成交. 持仓价:{entryPrice}, 数量:{order.LastFilledQuantity}, 平仓价:{avgPrice}, 利润:{dbOrder.PNL ?? 0} USDT.");
                     }
                     else
-                        this._logger.LogError($"错误的合约配置状态{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
+                        this._logger.LogError($"错误的合约配置状态{order.Id}/{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
                 }
                 else if (order.Status != OrderStatus.PartiallyFilled && order.Status != OrderStatus.New)
                 {
