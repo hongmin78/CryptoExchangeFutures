@@ -544,21 +544,22 @@ namespace CEF.Common.Context
                             PNL = (adlOrder.PositionSide == PositionSide.Long ? 1 : -1) * (adlOrder.AvgPrice - future.EntryPrice) * adlOrder.Quantity
                         };
                         await dbAccessor.InsertAsync(order);
-
-                        var avgPrice = order.AvgPrice;
-                        var entryPrice = future.EntryPrice; 
-                        future.PNL += order.PNL ?? 0;
-                        future.Size -= adlOrder.Quantity;
-                        future.AbleSize = future.Size;
-                        if (future.Size == 0)
+                        if (future.Size > order.FilledQuantity)
                         {
-                            future.EntryPrice = 0;
-                            future.LastTransactionOpenPrice = 0;
-                            future.LastTransactionOpenSize = 0;
-                            future.OrdersCount = 0; 
-                        } 
-                        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                        await this.UpdateFutureAsync(future, new List<string>() {
+                            var avgPrice = order.AvgPrice;
+                            var entryPrice = future.EntryPrice;
+                            future.PNL += order.PNL ?? 0;
+                            future.Size -= adlOrder.Quantity;
+                            future.AbleSize = future.Size;
+                            if (future.Size == 0)
+                            {
+                                future.EntryPrice = 0;
+                                future.LastTransactionOpenPrice = 0;
+                                future.LastTransactionOpenSize = 0;
+                                future.OrdersCount = 0;
+                            }
+                            future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                            await this.UpdateFutureAsync(future, new List<string>() {
                                 "PNL",
                                 "Size",
                                 "AbleSize",
@@ -567,7 +568,8 @@ namespace CEF.Common.Context
                                 "LastTransactionOpenSize",
                                 "OrdersCount",
                                 "UpdateTime" });
-                        this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide == 1 ? "Long" : "Short")}] ADL Close Position. Entry Price:{entryPrice}, Close Price:{avgPrice}, PNL:{order.PNL ?? 0} USDT.");
+                            this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide == 1 ? "Long" : "Short")}] ADL Close Position. Entry Price:{entryPrice}, Close Price:{avgPrice}, PNL:{order.PNL ?? 0} USDT.");
+                        } 
                         futures = await this.GetFuturesAsync();
                     } 
                 }
