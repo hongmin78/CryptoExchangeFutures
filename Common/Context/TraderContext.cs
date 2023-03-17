@@ -46,7 +46,8 @@ namespace CEF.Common.Context
             foreach (var symbol in symbols)
             {
                 GetKlineData(symbol, PeriodOption.Per15Minute).GetAwaiter().GetResult();
-                GetKlineData(symbol, PeriodOption.FourHourly).GetAwaiter().GetResult();  
+                GetKlineData(symbol, PeriodOption.FourHourly).GetAwaiter().GetResult();
+                SpinWait.SpinUntil(() => false, 200);
             } 
         }
 
