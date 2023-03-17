@@ -98,6 +98,7 @@ static async Task<IResult> GetFuturesImpl(string? symbol, bool? enable)
     sb.Append($"<td align='center'>OrdersCount</td>");
     sb.Append($"<td align='center'>IsEnabled</td>");
     sb.Append($"<td align='center'>Status</td>");
+    sb.Append($"<td align='center'>UnrealizedPNL</td>");
     sb.Append($"<td align='center'>PNL</td>");
     sb.Append("</tr>");
     foreach (var future in futures)
@@ -116,6 +117,7 @@ static async Task<IResult> GetFuturesImpl(string? symbol, bool? enable)
         sb.Append($"<td>{future.OrdersCount}</td>");
         sb.Append($"<td>{future.IsEnabled}</td>");
         sb.Append($"<td>{future.Status}</td>");
+        sb.Append($"<td>{(future.PositionSide == 1 ? 1 : -1) * (price - future.EntryPrice) * future.Size}</td>");
         sb.Append($"<td>{future.PNL}</td>");
         sb.Append("</tr>");
     }
