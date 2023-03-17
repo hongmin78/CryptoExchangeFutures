@@ -50,7 +50,7 @@ namespace CEF.Common.Context
             {
                 await this.GetKlineData(symbol, PeriodOption.Per15Minute);               
                 await this.GetKlineData(symbol, PeriodOption.FourHourly);
-                await Task.Delay(600);
+                await Task.Delay(1000);
             }
             await SubscribeToKlineUpdatesAsync(symbols);
             //await SubscribeToUserDataUpdatesAsync();
