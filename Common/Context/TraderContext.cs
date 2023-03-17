@@ -48,10 +48,9 @@ namespace CEF.Common.Context
             var symbols = (await this.GetFuturesAsync()).Select(x=>x.Symbol).Distinct();
             foreach (var symbol in symbols)
             {
-                await this.GetKlineData(symbol, PeriodOption.Per15Minute);
-                await Task.Delay(300);
+                await this.GetKlineData(symbol, PeriodOption.Per15Minute);               
                 await this.GetKlineData(symbol, PeriodOption.FourHourly);
-                await Task.Delay(300);
+                await Task.Delay(600);
             }
             await SubscribeToKlineUpdatesAsync(symbols);
             //await SubscribeToUserDataUpdatesAsync();
