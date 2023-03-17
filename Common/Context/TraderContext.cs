@@ -19,7 +19,7 @@ namespace CEF.Common.Context
 {
     public class TraderContext : IContext, ISingletonDependency
     {
-        public int MaxFutureCount { set; get; } = 12;
+        public int MaxFutureCount { set; get; } = 1;
         private readonly string futuresMemoryKey = "GetFuturesAsync";
         private readonly string klineDataMemoryKey = "GetKlineDataAsync_{0}_{1}";
         private readonly ILogger<TraderContext> _logger;
@@ -46,6 +46,12 @@ namespace CEF.Common.Context
         public async Task ExecuteAsync(CancellationToken ct = default)
         {           
             var symbols = (await this.GetFuturesAsync()).Select(x=>x.Symbol).Distinct();
+            foreach (var symbol in symbols)
+            {
+                await this.GetKlineData(symbol, PeriodOption.Per15Minute);
+                await this.GetKlineData(symbol, PeriodOption.FourHourly);
+                await Task.Delay(500);
+            }
             await SubscribeToKlineUpdatesAsync(symbols);
             //await SubscribeToUserDataUpdatesAsync();
             var futureInfoList = await this.GetSymbolsAsync();
@@ -65,7 +71,7 @@ namespace CEF.Common.Context
                             continue;
                         }
                         if (future.Status != FutureStatus.None)
-                            continue;
+                            continue;                       
                         foreach (var strategy in this._strategyList)
                         { 
                             if((int)strategy.Side != future.PositionSide) continue;
@@ -189,7 +195,7 @@ namespace CEF.Common.Context
                         await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "FilledQuantity" });
 
                         var futures = await this.GetFuturesAsync();
-                        var future = futures.FirstOrDefault(x => x.Symbol == order.Symbol && x.PositionSide == (int)order.PositionSide && x.Id == dbOrder.FutureId);
+                        var future = futures.FirstOrDefault(x => x.Id == dbOrder.FutureId);
                         if (future == null)
                         {
                             this._logger.LogError($"未发现合约配置{order.Symbol}/{order.PositionSide.GetDescription()}");
@@ -284,7 +290,10 @@ namespace CEF.Common.Context
             {
                 var callResult = await this._exchange.GetKlineDataAsync(symbol, period, DateTime.Now.AddDays(-1));
                 if (callResult.Success)
+                {
+                    //await Task.Delay(1000);
                     return callResult.Data.ToList();
+                }
                 else
                 {
                     this._logger.LogError($"GetKlineDataAsync 调用失败. errorcode:{callResult.ErrorCode} detail:{callResult.Msg}");
@@ -353,7 +362,7 @@ namespace CEF.Common.Context
                     //    dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                     //    dbOrder.Status = OrderStatus.Invalid.GetDescription();
                     //    await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status" });
-                    //    var future = futures.FirstOrDefault(x => x.Symbol == dbOrder.Symbol && x.Status != FutureStatus.None && x.Id == dbOrder.FutureId);
+                    //    var future = futures.FirstOrDefault(x => x.Status != FutureStatus.None && x.Id == dbOrder.FutureId);
                     //    if (future != null)
                     //    {
                     //        future.Status = FutureStatus.None;
@@ -376,7 +385,7 @@ namespace CEF.Common.Context
                 {
                     dbOrder.FilledQuantity = dbOrder.Quantity;
                     await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "FilledQuantity" });
-                    var future = futures.FirstOrDefault(x => x.Symbol == order.Symbol && x.PositionSide == (int)order.PositionSide && x.Id == dbOrder.FutureId);
+                    var future = futures.FirstOrDefault(x => x.Id == dbOrder.FutureId);
                     if (future == null)
                     {
                         this._logger.LogError($"未发现合约配置{order.Symbol}/{order.PositionSide.GetDescription()}");
@@ -438,7 +447,7 @@ namespace CEF.Common.Context
                     dbOrder.FilledQuantity = order.LastFilledQuantity;
                     await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "FilledQuantity" });
 
-                    var future = futures.FirstOrDefault(x => x.Symbol == order.Symbol && x.PositionSide == (int)order.PositionSide && x.Id == dbOrder?.FutureId);
+                    var future = futures.FirstOrDefault(x => x.Symbol == x.Id == dbOrder?.FutureId);
                     if (future == null)
                     {
                         this._logger.LogError($"未发现合约配置{order.Symbol}/{order.PositionSide.GetDescription()}");
@@ -497,7 +506,7 @@ namespace CEF.Common.Context
                     //dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                     //dbOrder.Status = OrderStatus.Invalid.GetDescription();
                     //await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status" });
-                    //var future = futures.FirstOrDefault(x => x.Symbol == dbOrder.Symbol && x.Status != FutureStatus.None && x.Id == dbOrder.FutureId);
+                    //var future = futures.FirstOrDefault(x => x.Status != FutureStatus.None && x.Id == dbOrder.FutureId);
                     //if (future != null)
                     //{
                     //    future.Status = FutureStatus.None;

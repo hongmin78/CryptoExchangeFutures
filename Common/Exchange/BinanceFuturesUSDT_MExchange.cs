@@ -313,9 +313,9 @@ namespace CEF.Common.Exchange
 
         public async Task<CallResult<FutureOrder>> GetOrderAsync(string symbol, long? orderId = null, string? origClientOrderId = null)
         {
-            var result = await this.Client.UsdFuturesApi.Trading.GetOpenOrderAsync(symbol, orderId, origClientOrderId, receiveWindow:5000);
+            var result = await this.Client.UsdFuturesApi.Trading.GetOrderAsync(symbol, orderId, origClientOrderId, receiveWindow: 5000); 
             if(!result.Success)
-                result = await this.Client.UsdFuturesApi.Trading.GetOrderAsync(symbol, orderId, origClientOrderId, receiveWindow:5000);
+                result = await this.Client.UsdFuturesApi.Trading.GetOpenOrderAsync(symbol, orderId, origClientOrderId, receiveWindow: 5000);
             return new CallResult<FutureOrder>()
             {
                 Success = result.Success,
