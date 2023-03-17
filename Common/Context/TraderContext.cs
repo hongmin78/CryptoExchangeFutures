@@ -41,17 +41,18 @@ namespace CEF.Common.Context
             _strategyList = strategyList;
             _exchange = exchange;
             _memoryCache = memoryCache;
+
+            var symbols = (this.GetFuturesAsync().GetAwaiter().GetResult()).Select(x => x.Symbol).Distinct();
+            foreach (var symbol in symbols)
+            {
+                GetKlineData(symbol, PeriodOption.Per15Minute).GetAwaiter().GetResult();
+                GetKlineData(symbol, PeriodOption.FourHourly).GetAwaiter().GetResult();  
+            } 
         }
 
         public async Task ExecuteAsync(CancellationToken ct = default)
-        {           
-            var symbols = (await this.GetFuturesAsync()).Select(x=>x.Symbol).Distinct();
-            foreach (var symbol in symbols)
-            {
-                await this.GetKlineData(symbol, PeriodOption.Per15Minute);               
-                await this.GetKlineData(symbol, PeriodOption.FourHourly);
-                await Task.Delay(1000);
-            }
+        {
+            var symbols = (await this.GetFuturesAsync()).Select(x => x.Symbol).Distinct();
             await SubscribeToKlineUpdatesAsync(symbols);
             //await SubscribeToUserDataUpdatesAsync();
             var futureInfoList = await this.GetSymbolsAsync();
