@@ -19,7 +19,7 @@ namespace CEF.Common.Context
 {
     public class TraderContext : IContext, ISingletonDependency
     {
-        public int MaxFutureCount { set; get; } = 1;
+        public int MaxFutureCount { set; get; } = 12;
         private readonly string futuresMemoryKey = "GetFuturesAsync";
         private readonly string klineDataMemoryKey = "GetKlineDataAsync_{0}_{1}";
         private readonly ILogger<TraderContext> _logger;
@@ -283,7 +283,7 @@ namespace CEF.Common.Context
             });
         }
 
-        async Task<List<IOhlcv>> GetKlineData(string symbol, PeriodOption period)
+        public async Task<List<IOhlcv>> GetKlineData(string symbol, PeriodOption period)
         {
             var memoryKey = string.Format(klineDataMemoryKey, symbol, (int)period);
             var result = await this._memoryCache.GetOrSetObjectAsync<List<IOhlcv>>(memoryKey, async () =>

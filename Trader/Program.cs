@@ -75,6 +75,7 @@ static async Task<IResult> GetFuturesImpl(string? symbol, bool? enable)
     var sb = new StringBuilder();
     using var scope = GlobalConfigure.ServiceLocatorInstance.CreateScope();
     using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
+    var context = scope.ServiceProvider.GetService<IContext>();
     var futures = await dbAccessor.GetIQueryable<Future>().ToListAsync();
     if (!string.IsNullOrEmpty(symbol))
         futures = futures.Where(x => x.Symbol.Contains(symbol)).ToList();
@@ -90,8 +91,9 @@ static async Task<IResult> GetFuturesImpl(string? symbol, bool? enable)
     sb.Append($"<td align='center'>PositionSide</td>");
     sb.Append($"<td align='center'>Size</td>");
     sb.Append($"<td align='center'>EntryPrice</td>");
-    sb.Append($"<td align='center'>LastPrice</td>");
-    sb.Append($"<td align='center'>LastSize</td>");
+    sb.Append($"<td align='center'>CurrentPrice</td>"); 
+    sb.Append($"<td align='center'>LastTransactionPrice</td>");
+    sb.Append($"<td align='center'>LastTransactionSize</td>");
     sb.Append($"<td align='center'>OrdersCount</td>");
     sb.Append($"<td align='center'>IsEnabled</td>");
     sb.Append($"<td align='center'>Status</td>");
@@ -99,11 +101,13 @@ static async Task<IResult> GetFuturesImpl(string? symbol, bool? enable)
     sb.Append("</tr>");
     foreach (var future in futures)
     {
+        var klines = await context.GetKlineData(future.Symbol, PeriodOption.Per15Minute);
         sb.Append("<tr >");
         sb.Append($"<td>{future.Symbol}</td>");
         sb.Append($"<td>{future.PositionSide}</td>");
         sb.Append($"<td>{future.Size}</td>");
         sb.Append($"<td>{future.EntryPrice}</td>");
+        sb.Append($"<td>{klines.LastOrDefault()?.Close}</td>");
         sb.Append($"<td>{future.LastTransactionOpenPrice}</td>");
         sb.Append($"<td>{future.LastTransactionOpenSize}</td>");
         sb.Append($"<td>{future.OrdersCount}</td>");
