@@ -300,7 +300,7 @@ namespace CEF.Common.Context
                     this._logger.LogError($"GetKlineDataAsync 调用失败. errorcode:{callResult.ErrorCode} detail:{callResult.Msg}");
                     return default;
                 }
-            }, new MemoryCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(999) });
+            }, new MemoryCacheEntryOptions() { SlidingExpiration = TimeSpan.FromDays(999) });
             return result;
         }
 
