@@ -228,7 +228,7 @@ namespace CEF.Common.Context
                         {
                             var avgPrice = order.AvgPrice;
                             var entryPrice = future.EntryPrice;
-                            dbOrder.PNL = (order.PositionSide == PositionSide.Long ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * dbOrder.Quantity;
+                            dbOrder.PNL = (dbOrder.PositionSide == "Long" ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * dbOrder.Quantity;
                             await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "PNL" });
                             future.Size = 0;
                             future.PNL += dbOrder.PNL??0;
@@ -418,7 +418,7 @@ namespace CEF.Common.Context
                     {
                         var avgPrice = order.AvgPrice;
                         var entryPrice = future.EntryPrice;
-                        dbOrder.PNL = (order.PositionSide == PositionSide.Long ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * dbOrder.Quantity;
+                        dbOrder.PNL = (dbOrder.PositionSide == "Long" ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * dbOrder.Quantity;
                         await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "PNL" });
                         future.PNL += dbOrder.PNL ?? 0;
                         future.Size = 0;
@@ -483,7 +483,7 @@ namespace CEF.Common.Context
                     {
                         var avgPrice = order.AvgPrice;
                         var entryPrice = future.EntryPrice;
-                        dbOrder.PNL = (order.PositionSide == PositionSide.Long ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * order.LastFilledQuantity;
+                        dbOrder.PNL = (dbOrder.PositionSide == "Long" ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * order.LastFilledQuantity;
                         await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "PNL" });
                         future.PNL += dbOrder.PNL ?? 0;
                         future.Size -= order.LastFilledQuantity;
