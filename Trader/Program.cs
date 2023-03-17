@@ -111,7 +111,7 @@ static async Task<IResult> GetFuturesImpl(string? symbol, bool? enable)
         sb.Append($"<td>{future.Size}</td>");
         sb.Append($"<td>{future.EntryPrice}</td>");
         sb.Append($"<td>{price}</td>");
-        sb.Append($"<td>{future.EntryPrice * price}</td>");
+        sb.Append($"<td>{future.Size * price}</td>");
         sb.Append($"<td>{future.LastTransactionOpenPrice}</td>");
         sb.Append($"<td>{future.LastTransactionOpenSize}</td>");
         sb.Append($"<td>{future.OrdersCount}</td>");
