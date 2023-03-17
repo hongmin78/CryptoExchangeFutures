@@ -447,7 +447,7 @@ namespace CEF.Common.Context
                     dbOrder.FilledQuantity = order.LastFilledQuantity;
                     await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "FilledQuantity" });
 
-                    var future = futures.FirstOrDefault(x => x.Symbol == x.Id == dbOrder?.FutureId);
+                    var future = futures.FirstOrDefault(x => x.Id == dbOrder?.FutureId);
                     if (future == null)
                     {
                         this._logger.LogError($"未发现合约配置{order.Symbol}/{order.PositionSide.GetDescription()}");
