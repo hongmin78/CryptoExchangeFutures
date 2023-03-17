@@ -49,9 +49,9 @@ namespace CEF.Common.Context
             foreach (var symbol in symbols)
             {
                 await this.GetKlineData(symbol, PeriodOption.Per15Minute);
-                await Task.Delay(100);
+                await Task.Delay(300);
                 await this.GetKlineData(symbol, PeriodOption.FourHourly);
-                await Task.Delay(100);
+                await Task.Delay(300);
             }
             await SubscribeToKlineUpdatesAsync(symbols);
             //await SubscribeToUserDataUpdatesAsync();
