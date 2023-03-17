@@ -91,7 +91,8 @@ static async Task<IResult> GetFuturesImpl(string? symbol, bool? enable)
     sb.Append($"<td align='center'>PositionSide</td>");
     sb.Append($"<td align='center'>Size</td>");
     sb.Append($"<td align='center'>EntryPrice</td>");
-    sb.Append($"<td align='center'>CurrentPrice</td>"); 
+    sb.Append($"<td align='center'>CurrentPrice</td>");
+    sb.Append($"<td align='center'>Value</td>");
     sb.Append($"<td align='center'>LastTransactionPrice</td>");
     sb.Append($"<td align='center'>LastTransactionSize</td>");
     sb.Append($"<td align='center'>OrdersCount</td>");
@@ -102,12 +103,14 @@ static async Task<IResult> GetFuturesImpl(string? symbol, bool? enable)
     foreach (var future in futures)
     {
         var klines = await context.GetKlineData(future.Symbol, PeriodOption.Per15Minute);
+        var price = klines.LastOrDefault()?.Close ?? 0;
         sb.Append("<tr >");
         sb.Append($"<td>{future.Symbol}</td>");
         sb.Append($"<td>{future.PositionSide}</td>");
         sb.Append($"<td>{future.Size}</td>");
         sb.Append($"<td>{future.EntryPrice}</td>");
-        sb.Append($"<td>{klines.LastOrDefault()?.Close}</td>");
+        sb.Append($"<td>{price}</td>");
+        sb.Append($"<td>{future.EntryPrice * price}</td>");
         sb.Append($"<td>{future.LastTransactionOpenPrice}</td>");
         sb.Append($"<td>{future.LastTransactionOpenSize}</td>");
         sb.Append($"<td>{future.OrdersCount}</td>");
