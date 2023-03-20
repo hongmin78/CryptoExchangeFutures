@@ -10,7 +10,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Net;
 using System.Net.NetworkInformation;
+using System.Threading.Tasks.Dataflow;
 using Trady.Core;
 using Trady.Core.Infrastructure;
 using static System.Formats.Asn1.AsnWriter;
@@ -19,7 +21,7 @@ namespace CEF.Common.Context
 {
     public class TraderContext : IContext, ISingletonDependency
     {
-        public int MaxFutureCount { set; get; } = 12;
+        public int MaxFutureCount { set; get; } = 20;
         private readonly string futuresMemoryKey = "GetFuturesAsync";
         private readonly string klineDataMemoryKey = "GetKlineDataAsync_{0}_{1}";
         private readonly ILogger<TraderContext> _logger;
@@ -28,6 +30,7 @@ namespace CEF.Common.Context
         private readonly IEnumerable<IStrategy> _strategyList;
         private readonly IExchange _exchange;
         private readonly IMemoryCache _memoryCache;
+        public BufferBlock<FutureOrder> FutureOrderBlock = new BufferBlock<FutureOrder>();
         public TraderContext(IServiceProvider serviceProvider,
                             ITrader trader,
                             ILogger<TraderContext> logger,
@@ -41,6 +44,7 @@ namespace CEF.Common.Context
             _strategyList = strategyList;
             _exchange = exchange;
             _memoryCache = memoryCache;
+            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 
             var symbols = (this.GetFuturesAsync().GetAwaiter().GetResult()).Select(x => x.Symbol).Distinct();
             foreach (var symbol in symbols)
@@ -55,7 +59,7 @@ namespace CEF.Common.Context
         {
             var symbols = (await this.GetFuturesAsync()).Select(x => x.Symbol).Distinct();
             await SubscribeToKlineUpdatesAsync(symbols);
-            //await SubscribeToUserDataUpdatesAsync();
+            await SubscribeToUserDataUpdatesAsync();
             var futureInfoList = await this.GetSymbolsAsync();
             while (!ct.IsCancellationRequested)
             {
@@ -161,7 +165,7 @@ namespace CEF.Common.Context
             await this._exchange.SubscribeToUserDataUpdatesAsync(
                 margin =>
                 {
-
+                   
 
                 },
                 account =>
@@ -171,89 +175,90 @@ namespace CEF.Common.Context
                 },
                 async order =>
                 {
-                    if (order.Status == OrderStatus.Expired) return; 
-                    if (order.Status == OrderStatus.Filled)
-                    {
-                        using var scope = this._serviceProvider.CreateScope();
-                        using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
-                        long orderId = -1;
-                        if (!long.TryParse(order.ClientOrderId, out orderId))
-                        {
-                            this._logger.LogInformation($"Order Not Found. {order.ToJson()}");
-                            return;
-                        }
-                        var dbOrder = await dbAccessor.GetIQueryable<Entity.Order>().FirstOrDefaultAsync(x => x.Id == orderId);
-                        if (dbOrder == null)
-                        {
-                            this._logger.LogInformation($"Order Not Found. {order.ToJson()}");
-                            return;
-                        }
-                        //this._logger.LogInformation($"Order Update {order.ToJson()}");
-                        dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                        dbOrder.Status = order.Status.GetDescription();
-                        dbOrder.AvgPrice = order.AvgPrice;
-                        await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status", "AvgPrice" });
-                        dbOrder.FilledQuantity = dbOrder.Quantity;
-                        await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "FilledQuantity" });
+                    await this.FutureOrderBlock.SendAsync(order);
+                    //if (order.Status == OrderStatus.Expired) return; 
+                    //if (order.Status == OrderStatus.Filled)
+                    //{
+                    //    using var scope = this._serviceProvider.CreateScope();
+                    //    using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
+                    //    long orderId = -1;
+                    //    if (!long.TryParse(order.ClientOrderId, out orderId))
+                    //    {
+                    //        this._logger.LogInformation($"Order Not Found. {order.ToJson()}");
+                    //        return;
+                    //    }
+                    //    var dbOrder = await dbAccessor.GetIQueryable<Entity.Order>().FirstOrDefaultAsync(x => x.Id == orderId);
+                    //    if (dbOrder == null)
+                    //    {
+                    //        this._logger.LogInformation($"Order Not Found. {order.ToJson()}");
+                    //        return;
+                    //    }
+                    //    //this._logger.LogInformation($"Order Update {order.ToJson()}");
+                    //    dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                    //    dbOrder.Status = order.Status.GetDescription();
+                    //    dbOrder.AvgPrice = order.AvgPrice;
+                    //    await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status", "AvgPrice" });
+                    //    dbOrder.FilledQuantity = dbOrder.Quantity;
+                    //    await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "FilledQuantity" });
 
-                        var futures = await this.GetFuturesAsync();
-                        var future = futures.FirstOrDefault(x => x.Id == dbOrder.FutureId);
-                        if (future == null)
-                        {
-                            this._logger.LogError($"未发现合约配置{order.Symbol}/{order.PositionSide.GetDescription()}");
-                            return;
-                        }
-                        if (future.Status == FutureStatus.Openning)
-                        {
-                            future.EntryPrice = (future.EntryPrice * future.Size + order.AvgPrice * order.Quantity) / (future.Size + order.Quantity);
-                            future.Size += order.Quantity;
-                            future.AbleSize += order.Quantity;
-                            future.LastTransactionOpenPrice = order.AvgPrice;
-                            future.LastTransactionOpenSize = order.Quantity;
-                            future.OrdersCount++;
-                            future.Status = FutureStatus.None;
-                            future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");                            
-                            await this.UpdateFutureAsync(future, new List<string>() {
-                                "Size",
-                                "AbleSize",
-                                "EntryPrice",
-                                "LastTransactionOpenPrice",
-                                "LastTransactionOpenSize",
-                                "OrdersCount",
-                                "Status",
-                                "UpdateTime" });
-                            this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide == 1 ? "Long" : "Short")}] Open Position.  safety order [{future.OrdersCount - 1}/{future.MaxSafetyOrdersCount}]. Price:{order.AvgPrice}, Size:{order.AvgPrice * order.Quantity} USDT.");
-                        }
-                        else if (future.Status == FutureStatus.Closing)
-                        {
-                            var avgPrice = order.AvgPrice;
-                            var entryPrice = future.EntryPrice;
-                            dbOrder.PNL = (dbOrder.PositionSide == "Long" ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * dbOrder.Quantity;
-                            await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "PNL" });
-                            future.Size = 0;
-                            future.PNL += dbOrder.PNL??0;
-                            future.AbleSize = 0;
-                            future.EntryPrice = 0;
-                            future.LastTransactionOpenPrice = 0;
-                            future.LastTransactionOpenSize = 0;
-                            future.OrdersCount = 0;
-                            future.Status = FutureStatus.None;
-                            future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                            await this.UpdateFutureAsync(future, new List<string>() {
-                                "PNL",
-                                "Size",
-                                "AbleSize",
-                                "EntryPrice",
-                                "LastTransactionOpenPrice",
-                                "LastTransactionOpenSize",
-                                "OrdersCount",
-                                "Status",
-                                "UpdateTime" });
-                            this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide==1 ? "Long" : "Short")}] Close Position. Entry Price:{entryPrice}, Open Price:{avgPrice}, PNL:{dbOrder.PNL ?? 0} USDT.");
-                        }
-                        else
-                            this._logger.LogError($"错误的合约配置状态{order.Id}/{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
-                    }
+                    //    var futures = await this.GetFuturesAsync();
+                    //    var future = futures.FirstOrDefault(x => x.Id == dbOrder.FutureId);
+                    //    if (future == null)
+                    //    {
+                    //        this._logger.LogError($"未发现合约配置{order.Symbol}/{order.PositionSide.GetDescription()}");
+                    //        return;
+                    //    }
+                    //    if (future.Status == FutureStatus.Openning)
+                    //    {
+                    //        future.EntryPrice = (future.EntryPrice * future.Size + order.AvgPrice * order.Quantity) / (future.Size + order.Quantity);
+                    //        future.Size += order.Quantity;
+                    //        future.AbleSize += order.Quantity;
+                    //        future.LastTransactionOpenPrice = order.AvgPrice;
+                    //        future.LastTransactionOpenSize = order.Quantity;
+                    //        future.OrdersCount++;
+                    //        future.Status = FutureStatus.None;
+                    //        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");                            
+                    //        await this.UpdateFutureAsync(future, new List<string>() {
+                    //            "Size",
+                    //            "AbleSize",
+                    //            "EntryPrice",
+                    //            "LastTransactionOpenPrice",
+                    //            "LastTransactionOpenSize",
+                    //            "OrdersCount",
+                    //            "Status",
+                    //            "UpdateTime" });
+                    //        this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide == 1 ? "Long" : "Short")}] Open Position.  safety order [{future.OrdersCount - 1}/{future.MaxSafetyOrdersCount}]. Price:{order.AvgPrice}, Size:{order.AvgPrice * order.Quantity} USDT.");
+                    //    }
+                    //    else if (future.Status == FutureStatus.Closing)
+                    //    {
+                    //        var avgPrice = order.AvgPrice;
+                    //        var entryPrice = future.EntryPrice;
+                    //        dbOrder.PNL = (dbOrder.PositionSide == "Long" ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * dbOrder.Quantity;
+                    //        await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "PNL" });
+                    //        future.Size = 0;
+                    //        future.PNL += dbOrder.PNL??0;
+                    //        future.AbleSize = 0;
+                    //        future.EntryPrice = 0;
+                    //        future.LastTransactionOpenPrice = 0;
+                    //        future.LastTransactionOpenSize = 0;
+                    //        future.OrdersCount = 0;
+                    //        future.Status = FutureStatus.None;
+                    //        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                    //        await this.UpdateFutureAsync(future, new List<string>() {
+                    //            "PNL",
+                    //            "Size",
+                    //            "AbleSize",
+                    //            "EntryPrice",
+                    //            "LastTransactionOpenPrice",
+                    //            "LastTransactionOpenSize",
+                    //            "OrdersCount",
+                    //            "Status",
+                    //            "UpdateTime" });
+                    //        this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide==1 ? "Long" : "Short")}] Close Position. Entry Price:{entryPrice}, Open Price:{avgPrice}, PNL:{dbOrder.PNL ?? 0} USDT.");
+                    //    }
+                    //    else
+                    //        this._logger.LogError($"错误的合约配置状态{order.Id}/{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
+                    //}
                 });
         }
 
@@ -344,6 +349,7 @@ namespace CEF.Common.Context
 
         public async Task SyncExchangeDataAsync()
         {
+            this.FutureOrderBlock.TryReceiveAll(out var futureOrders);
             using var scope = this._serviceProvider.CreateScope();
             using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
             var futures = await this.GetFuturesAsync();
@@ -352,31 +358,35 @@ namespace CEF.Common.Context
             {
                 //if (DateTime.Now.Subtract(DateTime.Parse(dbOrder.CreateTime.Remove(dbOrder.CreateTime.Length - 4))).TotalSeconds < 5)
                 //    continue;
-                var orderResult = await this._exchange.GetOrderAsync(dbOrder.Symbol, long.Parse(dbOrder.ClientOrderId));
-                if (!orderResult.Success)
-                {   
-                    //if (DateTime.Now.Subtract(DateTime.Parse(dbOrder.CreateTime.Remove(dbOrder.CreateTime.Length - 4))).TotalSeconds < 60)
-                    //    continue;
-                    this._logger.LogError($"无法从交易所获取定单详细. orderId:{dbOrder.Id}, clientOrderId:{dbOrder.ClientOrderId}.  errorcode:{orderResult.ErrorCode} msg:{orderResult.Msg}");
-                    this._logger.LogError($"{dbOrder.ToJson()}");
-                    //if (orderResult.ErrorCode == -2013)
-                    //{
-                    //    dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                    //    dbOrder.Status = OrderStatus.Invalid.GetDescription();
-                    //    await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status" });
-                    //    var future = futures.FirstOrDefault(x => x.Status != FutureStatus.None && x.Id == dbOrder.FutureId);
-                    //    if (future != null)
-                    //    {
-                    //        future.Status = FutureStatus.None;
-                    //        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                    //        await this.UpdateFutureAsync(future, new List<string>() {
-                    //            "Status",
-                    //            "UpdateTime" });
-                    //    }
-                    //}
-                    continue;
+                var order = futureOrders?.FirstOrDefault(x=>x.Symbol == dbOrder.Symbol && x.Id == long.Parse(dbOrder.ClientOrderId));
+                if (order == null)
+                {
+                    var orderResult = await this._exchange.GetOrderAsync(dbOrder.Symbol, long.Parse(dbOrder.ClientOrderId));
+                    if (!orderResult.Success)
+                    {
+                        //if (DateTime.Now.Subtract(DateTime.Parse(dbOrder.CreateTime.Remove(dbOrder.CreateTime.Length - 4))).TotalSeconds < 60)
+                        //    continue;
+                        this._logger.LogError($"无法从交易所获取定单详细. orderId:{dbOrder.Id}, clientOrderId:{dbOrder.ClientOrderId}.  errorcode:{orderResult.ErrorCode} msg:{orderResult.Msg}");
+                        this._logger.LogError($"{dbOrder.ToJson()}");
+                        //if (orderResult.ErrorCode == -2013)
+                        //{
+                        //    dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                        //    dbOrder.Status = OrderStatus.Invalid.GetDescription();
+                        //    await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status" });
+                        //    var future = futures.FirstOrDefault(x => x.Status != FutureStatus.None && x.Id == dbOrder.FutureId);
+                        //    if (future != null)
+                        //    {
+                        //        future.Status = FutureStatus.None;
+                        //        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                        //        await this.UpdateFutureAsync(future, new List<string>() {
+                        //            "Status",
+                        //            "UpdateTime" });
+                        //    }
+                        //}
+                        continue;
+                    }
+                    order = orderResult.Data;
                 }
-                var order = orderResult.Data;
                 if (order.Status == OrderStatus.New) continue;
 
                 dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");

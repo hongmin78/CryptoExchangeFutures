@@ -32,7 +32,8 @@ builder.Host.ConfigureAppConfiguration(config =>
     services.AddAutoMapper();
     services.AddEFCoreSharding(config =>
     {
-        var connectionString = "DataSource=G:\\Git\\QuantitativeTrading\\Code\\Trader\\trade.db";
+        var connectionString = "DataSource=trade.db";
+        //var connectionString = "DataSource=G:\\Git\\QuantitativeTrading\\Code\\Trader\\trade.db";
         config.UseDatabase(connectionString, DatabaseType.SQLite);
         config.SetEntityAssemblies(GlobalConfigure.AllAssemblies);
         config.CreateShardingTableOnStarting(false);
@@ -121,6 +122,7 @@ static async Task<IResult> GetFuturesImpl(string? symbol, bool? enable)
         sb.Append($"<td>{future.PNL}</td>");
         sb.Append("</tr>");
     }
+    sb.Append($"<tr><td colspan='13' align='right'>Total Pnl:{futures?.Sum(x=>x.PNL)??0}</td></tr>");
     sb.Append("</table>");
     sb.Append("</body>");
     sb.Append("</html>");

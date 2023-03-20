@@ -48,21 +48,25 @@ namespace CEF.Common.Exchange
             var restBaseurl = "https://testnet.binancefuture.com";
             var websocketBaseurl = "wss://stream.binancefuture.com";
             this.APIKEY = ApiKey;
+            HttpClientHandler clientHandler = new HttpClientHandler();
+            clientHandler.ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => { return true; }; 
+            HttpClient client = new HttpClient(clientHandler);
             BinanceClientOptions clientOption = new BinanceClientOptions
             {
                 LogWriters = new List<ILogger> { logger },
-                LogLevel = LogLevel.Information,
+                LogLevel = LogLevel.Error,
                 ApiCredentials = new CryptoExchange.Net.Authentication.ApiCredentials(ApiKey, ApiSeret),
                 UsdFuturesApiOptions = new Binance.Net.Objects.BinanceApiClientOptions()
                 {
                     AutoTimestamp = false,
                     TradeRulesBehaviour = Binance.Net.Enums.TradeRulesBehaviour.None,
-                }
+                    HttpClient = client
+                }, 
             };
             BinanceSocketClientOptions socketOption = new BinanceSocketClientOptions
             {
                 LogWriters = new List<ILogger> { logger },
-                LogLevel = LogLevel.Information,
+                LogLevel = LogLevel.Error,
                 ApiCredentials = new CryptoExchange.Net.Authentication.ApiCredentials(ApiKey, ApiSeret),
                 UsdFuturesStreamsOptions = new CryptoExchange.Net.Objects.SocketApiClientOptions()
                 {
@@ -77,7 +81,7 @@ namespace CEF.Common.Exchange
                 socketOption.UsdFuturesStreamsOptions.BaseAddress = websocketBaseurl;
             }
             this.Client = new Binance.Net.Clients.BinanceClient(clientOption);
-            this.Ws = new Binance.Net.Clients.BinanceSocketClient(socketOption);           
+            this.Ws = new Binance.Net.Clients.BinanceSocketClient(socketOption);  
         }
 
         public async Task<CallResult<IEnumerable<FutureInfo>>> GetSymbolsAsync()
