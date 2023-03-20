@@ -71,7 +71,7 @@ namespace CEF.Common.Exchange
                 UsdFuturesStreamsOptions = new CryptoExchange.Net.Objects.SocketApiClientOptions()
                 {
                     AutoReconnect = true,
-                    ReconnectInterval = TimeSpan.FromMinutes(1),
+                    ReconnectInterval = TimeSpan.FromMinutes(1), 
                 }
             };
            
@@ -680,7 +680,7 @@ namespace CEF.Common.Exchange
             if (startUserStreamResult.Success)
             {
                 _listenKey = startUserStreamResult.Data;
-                JobHelper.SetIntervalJob(async () => await KeepAliveUserStreamAsync(), TimeSpan.FromMinutes(5));
+                JobHelper.SetIntervalJob(async () => await KeepAliveUserStreamAsync(), TimeSpan.FromMinutes(15));
             }
             else
                 this._logger.LogError($"Binance StartUserStreamAsync error, {startUserStreamResult.Error?.Code} {startUserStreamResult.Error?.Message}!");
