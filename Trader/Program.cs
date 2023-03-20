@@ -31,8 +31,8 @@ builder.Host.ConfigureAppConfiguration(config =>
     services.AddFxServices();
     services.AddAutoMapper();
     services.AddEFCoreSharding(config =>
-    {
-        var connectionString = "DataSource=trade.db";
+    { 
+        var connectionString = $"DataSource={System.AppDomain.CurrentDomain.BaseDirectory}trade.db";
         //var connectionString = "DataSource=G:\\Git\\QuantitativeTrading\\Code\\Trader\\trade.db";
         config.UseDatabase(connectionString, DatabaseType.SQLite);
         config.SetEntityAssemblies(GlobalConfigure.AllAssemblies);
