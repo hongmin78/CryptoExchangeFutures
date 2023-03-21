@@ -31,8 +31,9 @@ builder.Host.ConfigureAppConfiguration(config =>
     services.AddFxServices();
     services.AddAutoMapper();
     services.AddEFCoreSharding(config =>
-    { 
-        var connectionString = $"DataSource={System.AppDomain.CurrentDomain.BaseDirectory}trade.db";
+    {
+        var connectionString = "DataSource=trade.db";
+        //var connectionString = $"DataSource={System.AppDomain.CurrentDomain.BaseDirectory}trade.db";
         //var connectionString = "DataSource=G:\\Git\\QuantitativeTrading\\Code\\Trader\\trade.db";
         config.UseDatabase(connectionString, DatabaseType.SQLite);
         config.SetEntityAssemblies(GlobalConfigure.AllAssemblies);
@@ -41,9 +42,9 @@ builder.Host.ConfigureAppConfiguration(config =>
     });
     services.AddHostedService<HostService>();
 });
-//.UseConsoleLifetime();
 var app = builder.Build();
-app.Urls.Add("http://*");
+app.Urls.Add(app.Configuration["WebRootUrl"]);
+//app.Urls.Add("http://*");
 app.MapGet("/", () => Results.Redirect("/p"));
 app.MapGet("/p", GetFutures);
 app.MapGet("/p/{symbol}", GetFutures);
@@ -96,6 +97,7 @@ static async Task<IResult> GetFuturesImpl(string? symbol, bool? enable)
     sb.Append($"<td align='center'>Value</td>");
     sb.Append($"<td align='center'>LastTransactionPrice</td>");
     sb.Append($"<td align='center'>LastTransactionSize</td>");
+    sb.Append($"<td align='center'>LastUpdateTime</td>");
     sb.Append($"<td align='center'>OrdersCount</td>");
     sb.Append($"<td align='center'>IsEnabled</td>");
     sb.Append($"<td align='center'>Status</td>");
@@ -115,6 +117,7 @@ static async Task<IResult> GetFuturesImpl(string? symbol, bool? enable)
         sb.Append($"<td>{future.Size * price}</td>");
         sb.Append($"<td>{future.LastTransactionOpenPrice}</td>");
         sb.Append($"<td>{future.LastTransactionOpenSize}</td>");
+        sb.Append($"<td>{future.UpdateTime}</td>");
         sb.Append($"<td>{future.OrdersCount}</td>");
         sb.Append($"<td>{future.IsEnabled}</td>");
         sb.Append($"<td>{future.Status}</td>");
@@ -122,7 +125,7 @@ static async Task<IResult> GetFuturesImpl(string? symbol, bool? enable)
         sb.Append($"<td>{future.PNL}</td>");
         sb.Append("</tr>");
     }
-    sb.Append($"<tr><td colspan='13' align='right'>Total Pnl:{futures?.Sum(x=>x.PNL)??0}</td></tr>");
+    sb.Append($"<tr><td colspan='14' align='right'>Total Pnl:{futures?.Sum(x=>x.PNL)??0}</td></tr>");
     sb.Append("</table>");
     sb.Append("</body>");
     sb.Append("</html>");

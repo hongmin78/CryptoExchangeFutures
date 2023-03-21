@@ -328,15 +328,15 @@ namespace CEF.Common.Context
         }
 
         public async Task<IEnumerable<Future>> GetFuturesAsync()
-        { 
-            //var result = await this._memoryCache.GetOrSetObjectAsync<IEnumerable<Future>>(futuresMemoryKey, async () =>
-            //{
+        {
+            var result = await this._memoryCache.GetOrSetObjectAsync<IEnumerable<Future>>(futuresMemoryKey, async () =>
+            {
                 using var scope = this._serviceProvider.CreateScope();
                 using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
                 var futures = await dbAccessor.GetIQueryable<Future>().ToListAsync();
                 return futures;
-            //}, new MemoryCacheEntryOptions() { SlidingExpiration = TimeSpan.FromDays(30) });
-            //return result;
+            }, new MemoryCacheEntryOptions() { SlidingExpiration = TimeSpan.FromDays(30) });
+            return result;
         }
 
         async Task UpdateFutureAsync(Future future, List<string> properties)
@@ -368,21 +368,23 @@ namespace CEF.Common.Context
                         //    continue;
                         this._logger.LogError($"无法从交易所获取定单详细. orderId:{dbOrder.Id}, clientOrderId:{dbOrder.ClientOrderId}.  errorcode:{orderResult.ErrorCode} msg:{orderResult.Msg}");
                         this._logger.LogError($"{dbOrder.ToJson()}");
-                        //if (orderResult.ErrorCode == -2013)
-                        //{
-                        //    dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                        //    dbOrder.Status = OrderStatus.Invalid.GetDescription();
-                        //    await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status" });
-                        //    var future = futures.FirstOrDefault(x => x.Status != FutureStatus.None && x.Id == dbOrder.FutureId);
-                        //    if (future != null)
-                        //    {
-                        //        future.Status = FutureStatus.None;
-                        //        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                        //        await this.UpdateFutureAsync(future, new List<string>() {
-                        //            "Status",
-                        //            "UpdateTime" });
-                        //    }
-                        //}
+                        if (orderResult.ErrorCode == -2013)
+                        {
+                            if (DateTime.Now.Subtract(DateTime.Parse(dbOrder.CreateTime.Remove(dbOrder.CreateTime.Length - 4))).TotalSeconds < 60)
+                                continue;
+                            dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                            dbOrder.Status = OrderStatus.Invalid.GetDescription();
+                            await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status" });
+                            var future = futures.FirstOrDefault(x => x.Status != FutureStatus.None && x.Id == dbOrder.FutureId);
+                            if (future != null)
+                            {
+                                future.Status = FutureStatus.None;
+                                future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
+                                await this.UpdateFutureAsync(future, new List<string>() {
+                                    "Status",
+                                    "UpdateTime" });
+                            }
+                        }
                         continue;
                     }
                     order = orderResult.Data;
