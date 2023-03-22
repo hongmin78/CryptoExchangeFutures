@@ -11,15 +11,11 @@
 
   <ItemGroup>
     <None Remove="appsettings.json" />
-    <None Remove="trade.db" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="trade.db">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
@@ -33,6 +29,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Common\CEF.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="trade.db">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
