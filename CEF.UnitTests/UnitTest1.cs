@@ -1,5 +1,8 @@
+using Castle.Core.Configuration;
+using CEF.Common.Entity;
 using CEF.Common.Exchange;
 using CEF.Common.Extentions;
+using CEF.Common.Helper;
 using CEF.Common.OapiRobot;
 using CEF.Common.Primitives;
 using EFCore.Sharding;
@@ -7,7 +10,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using NUnit.Framework.Internal; 
+using NUnit.Framework.Internal;
+using Trady.Core;
+using Trady.Core.Infrastructure;
 
 namespace CEF.UnitTests
 {
@@ -41,7 +46,7 @@ namespace CEF.UnitTests
                        config.EnableShardingMigration(false);
                    });
                });
-               //.UseConsoleLifetime();
+            //.UseConsoleLifetime();
             var host = builder.Build();
             (new EFCoreShardingBootstrapper(host.Services)).StartAsync(new CancellationToken()).ConfigureAwait(false).GetAwaiter().GetResult();
             this.Services = host.Services;
@@ -57,13 +62,29 @@ namespace CEF.UnitTests
         }
 
         [Test]
-        public void test2() 
+        public void test2()
         {
-            var exchange = Services.CreateScope().ServiceProvider.GetService<IExchange>(); 
+            var exchange = Services.CreateScope().ServiceProvider.GetService<IExchange>();
             var orders = exchange.GetOrderAsync("LINKUSDT", null, "1635558913199837185").GetAwaiter().GetResult();
-            
+
             Assert.Pass();
 
+        }
+
+        [Test]
+        public async Task test3()
+        {
+            var symbol = "BTCUSDT";
+            var period = PeriodOption.Per15Minute;
+            var configuration = Services.CreateScope().ServiceProvider.GetService<Microsoft.Extensions.Configuration.IConfiguration>();
+            var baseUrl = configuration["QuotesBaseUrl"];
+            var result = await RestSharpHttpHelper.RestActionAsync(baseUrl, $"/{symbol}/{(int)period}");
+            var klines = result.ToObject<List<Ohlcv>>();
+
+            result = await RestSharpHttpHelper.RestActionAsync(baseUrl, "/orders");
+            var orders = result.ToObject<IEnumerable<FutureOrder>>();
+
+            Assert.Pass();
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using CEF.Common.Entity;
 using CEF.Common.Exchange;
 using CEF.Common.Extentions;
+using CEF.Common.Helper;
 using CEF.Common.Strategy;
 using CEF.Common.Trader;
 using Coldairarrow.Util;
@@ -8,6 +9,7 @@ using EFCore.Sharding;
 using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Net;
@@ -21,7 +23,7 @@ namespace CEF.Common.Context
 {
     public class TraderContext : IContext, ISingletonDependency
     {
-        public int MaxFutureCount { set; get; } = 20;
+        public int MaxFutureCount { set; get; } = 0;
         private readonly string futuresMemoryKey = "GetFuturesAsync";
         private readonly string klineDataMemoryKey = "GetKlineDataAsync_{0}_{1}";
         private readonly ILogger<TraderContext> _logger;
@@ -30,12 +32,13 @@ namespace CEF.Common.Context
         private readonly IEnumerable<IStrategy> _strategyList;
         private readonly IExchange _exchange;
         private readonly IMemoryCache _memoryCache;
-        public BufferBlock<FutureOrder> FutureOrderBlock = new BufferBlock<FutureOrder>();
+        private readonly IConfiguration _configuration;
         public TraderContext(IServiceProvider serviceProvider,
                             ITrader trader,
                             ILogger<TraderContext> logger,
                             IExchange exchange,
                             IEnumerable<IStrategy> strategyList,
+                            IConfiguration configuration,
                             IMemoryCache memoryCache)
         {
             _serviceProvider = serviceProvider;
@@ -44,22 +47,12 @@ namespace CEF.Common.Context
             _strategyList = strategyList;
             _exchange = exchange;
             _memoryCache = memoryCache;
+            _configuration = configuration;
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
-
-            var symbols = (this.GetFuturesAsync().GetAwaiter().GetResult()).Select(x => x.Symbol).Distinct();
-            foreach (var symbol in symbols)
-            {
-                GetKlineData(symbol, PeriodOption.Per15Minute).GetAwaiter().GetResult();
-                GetKlineData(symbol, PeriodOption.FourHourly).GetAwaiter().GetResult();
-                SpinWait.SpinUntil(() => false, 1000);
-            } 
         }
 
         public async Task ExecuteAsync(CancellationToken ct = default)
         {
-            var symbols = (await this.GetFuturesAsync()).Select(x => x.Symbol).Distinct();
-            await SubscribeToKlineUpdatesAsync(symbols);
-            await SubscribeToUserDataUpdatesAsync();
             var futureInfoList = await this.GetSymbolsAsync();
             while (!ct.IsCancellationRequested)
             {
@@ -83,6 +76,7 @@ namespace CEF.Common.Context
                             if((int)strategy.Side != future.PositionSide) continue;
                             var per15MinuteKlines = await this.GetKlineData(symbol, PeriodOption.Per15Minute);
                             var fourHourlyKlines = await this.GetKlineData(symbol, PeriodOption.FourHourly);
+                            if (!(per15MinuteKlines?.Any() ?? false)) continue;
                             var per15MinuteKlineIC = IndexedObjectConstructor(per15MinuteKlines, per15MinuteKlines.Count() - 1);
                             var fourHourlyKlinesIC = IndexedObjectConstructor(fourHourlyKlines, fourHourlyKlines.Count() - 1);
                             await strategy.ExecuteAsync(
@@ -160,154 +154,18 @@ namespace CEF.Common.Context
             return entity;
         }
 
-        async Task SubscribeToUserDataUpdatesAsync()
+        public async Task<List<Ohlcv>> GetKlineData(string symbol, PeriodOption period)
         {
-            await this._exchange.SubscribeToUserDataUpdatesAsync(
-                margin =>
-                {
-                   
-
-                },
-                account =>
-                {
-
-
-                },
-                async order =>
-                {
-                    await this.FutureOrderBlock.SendAsync(order);
-                    //if (order.Status == OrderStatus.Expired) return; 
-                    //if (order.Status == OrderStatus.Filled)
-                    //{
-                    //    using var scope = this._serviceProvider.CreateScope();
-                    //    using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
-                    //    long orderId = -1;
-                    //    if (!long.TryParse(order.ClientOrderId, out orderId))
-                    //    {
-                    //        this._logger.LogInformation($"Order Not Found. {order.ToJson()}");
-                    //        return;
-                    //    }
-                    //    var dbOrder = await dbAccessor.GetIQueryable<Entity.Order>().FirstOrDefaultAsync(x => x.Id == orderId);
-                    //    if (dbOrder == null)
-                    //    {
-                    //        this._logger.LogInformation($"Order Not Found. {order.ToJson()}");
-                    //        return;
-                    //    }
-                    //    //this._logger.LogInformation($"Order Update {order.ToJson()}");
-                    //    dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                    //    dbOrder.Status = order.Status.GetDescription();
-                    //    dbOrder.AvgPrice = order.AvgPrice;
-                    //    await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "UpdateTime", "Status", "AvgPrice" });
-                    //    dbOrder.FilledQuantity = dbOrder.Quantity;
-                    //    await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "FilledQuantity" });
-
-                    //    var futures = await this.GetFuturesAsync();
-                    //    var future = futures.FirstOrDefault(x => x.Id == dbOrder.FutureId);
-                    //    if (future == null)
-                    //    {
-                    //        this._logger.LogError($"未发现合约配置{order.Symbol}/{order.PositionSide.GetDescription()}");
-                    //        return;
-                    //    }
-                    //    if (future.Status == FutureStatus.Openning)
-                    //    {
-                    //        future.EntryPrice = (future.EntryPrice * future.Size + order.AvgPrice * order.Quantity) / (future.Size + order.Quantity);
-                    //        future.Size += order.Quantity;
-                    //        future.AbleSize += order.Quantity;
-                    //        future.LastTransactionOpenPrice = order.AvgPrice;
-                    //        future.LastTransactionOpenSize = order.Quantity;
-                    //        future.OrdersCount++;
-                    //        future.Status = FutureStatus.None;
-                    //        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");                            
-                    //        await this.UpdateFutureAsync(future, new List<string>() {
-                    //            "Size",
-                    //            "AbleSize",
-                    //            "EntryPrice",
-                    //            "LastTransactionOpenPrice",
-                    //            "LastTransactionOpenSize",
-                    //            "OrdersCount",
-                    //            "Status",
-                    //            "UpdateTime" });
-                    //        this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide == 1 ? "Long" : "Short")}] Open Position.  safety order [{future.OrdersCount - 1}/{future.MaxSafetyOrdersCount}]. Price:{order.AvgPrice}, Size:{order.AvgPrice * order.Quantity} USDT.");
-                    //    }
-                    //    else if (future.Status == FutureStatus.Closing)
-                    //    {
-                    //        var avgPrice = order.AvgPrice;
-                    //        var entryPrice = future.EntryPrice;
-                    //        dbOrder.PNL = (dbOrder.PositionSide == "Long" ? 1 : -1) * (order.AvgPrice - future.EntryPrice) * dbOrder.Quantity;
-                    //        await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "PNL" });
-                    //        future.Size = 0;
-                    //        future.PNL += dbOrder.PNL??0;
-                    //        future.AbleSize = 0;
-                    //        future.EntryPrice = 0;
-                    //        future.LastTransactionOpenPrice = 0;
-                    //        future.LastTransactionOpenSize = 0;
-                    //        future.OrdersCount = 0;
-                    //        future.Status = FutureStatus.None;
-                    //        future.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
-                    //        await this.UpdateFutureAsync(future, new List<string>() {
-                    //            "PNL",
-                    //            "Size",
-                    //            "AbleSize",
-                    //            "EntryPrice",
-                    //            "LastTransactionOpenPrice",
-                    //            "LastTransactionOpenSize",
-                    //            "OrdersCount",
-                    //            "Status",
-                    //            "UpdateTime" });
-                    //        this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide==1 ? "Long" : "Short")}] Close Position. Entry Price:{entryPrice}, Open Price:{avgPrice}, PNL:{dbOrder.PNL ?? 0} USDT.");
-                    //    }
-                    //    else
-                    //        this._logger.LogError($"错误的合约配置状态{order.Id}/{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
-                    //}
-                });
+            var baseUrl = this._configuration["QuotesBaseUrl"]; 
+            var result = await RestSharpHttpHelper.RestActionAsync(baseUrl, $"/{symbol}/{(int)period}");
+            return result.ToObject<List<Ohlcv>>();
         }
 
-        async Task SubscribeToKlineUpdatesAsync(IEnumerable<string> symbols)
-        { 
-            var periods = new List<PeriodOption>() { PeriodOption.Per15Minute, PeriodOption.FourHourly };
-            await this._exchange.SubscribeToKlineUpdatesAsync(symbols, periods, async kline =>
-            { 
-                var symbol = kline.Symbol;
-                var period = kline.Interval;
-                var memoryKey = string.Format(klineDataMemoryKey, symbol, (int)period); 
-                var dt = DateTime.SpecifyKind(kline.OpenTime, DateTimeKind.Utc);
-                var klines = (await this.GetKlineData(symbol, period)).ToList();
-                var currentKLine = klines.FirstOrDefault(x=>x.DateTime == dt);
-                if (currentKLine == null)
-                {
-                    currentKLine = new Candle(dt, kline.OpenPrice, kline.HighPrice, kline.LowPrice, kline.ClosePrice, kline.Volume);
-                    klines.Add(currentKLine);
-                }
-                else
-                {
-                    currentKLine.Close = kline.ClosePrice;
-                    currentKLine.High = kline.HighPrice;
-                    currentKLine.Low = kline.LowPrice;
-                    currentKLine.Open = kline.OpenPrice;
-                    currentKLine.Volume = kline.Volume;
-                } 
-                this._memoryCache.Set(memoryKey, klines);
-            });
-        }
-
-        public async Task<List<IOhlcv>> GetKlineData(string symbol, PeriodOption period)
+        async Task<IEnumerable<FutureOrder>> GetFutureOrders()
         {
-            var memoryKey = string.Format(klineDataMemoryKey, symbol, (int)period);
-            var result = await this._memoryCache.GetOrSetObjectAsync<List<IOhlcv>>(memoryKey, async () =>
-            {
-                var callResult = await this._exchange.GetKlineDataAsync(symbol, period, DateTime.Now.AddDays(-1));
-                if (callResult.Success)
-                {
-                    //await Task.Delay(1000);
-                    return callResult.Data.ToList();
-                }
-                else
-                {
-                    this._logger.LogError($"GetKlineDataAsync 调用失败. errorcode:{callResult.ErrorCode} detail:{callResult.Msg}");
-                    return default;
-                }
-            }, new MemoryCacheEntryOptions() { SlidingExpiration = TimeSpan.FromDays(999) });
-            return result;
+            var baseUrl = this._configuration["QuotesBaseUrl"];
+            var result = await RestSharpHttpHelper.RestActionAsync(baseUrl, "/orders");
+            return result.ToObject<IEnumerable<FutureOrder>>();
         }
 
         async Task<IEnumerable<FutureInfo>> GetSymbolsAsync()
@@ -349,7 +207,7 @@ namespace CEF.Common.Context
 
         public async Task SyncExchangeDataAsync()
         {
-            this.FutureOrderBlock.TryReceiveAll(out var futureOrders);
+            var futureOrders = await this.GetFutureOrders();
             using var scope = this._serviceProvider.CreateScope();
             using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
             var futures = await this.GetFuturesAsync();

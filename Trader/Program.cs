@@ -32,7 +32,9 @@ builder.Host.ConfigureAppConfiguration(config =>
     services.AddAutoMapper();
     services.AddEFCoreSharding(config =>
     {
-        var connectionString = "DataSource=trade.db";
+        var connectionString = hostContext.Configuration["DbConnectionString"].ToString();
+        if(string.IsNullOrEmpty(connectionString))
+            connectionString = "DataSource=trade.db";
         //var connectionString = $"DataSource={System.AppDomain.CurrentDomain.BaseDirectory}trade.db";
         //var connectionString = "DataSource=G:\\Git\\QuantitativeTrading\\Code\\Trader\\trade.db";
         config.UseDatabase(connectionString, DatabaseType.SQLite);
@@ -104,10 +106,14 @@ static async Task<IResult> GetFuturesImpl(string? symbol, bool? enable)
     sb.Append($"<td align='center'>UnrealizedPNL</td>");
     sb.Append($"<td align='center'>PNL</td>");
     sb.Append("</tr>");
+
+    var totalUnrealizedPNL = 0m;
     foreach (var future in futures)
-    {
+    { 
         var klines = await context.GetKlineData(future.Symbol, PeriodOption.Per15Minute);
         var price = klines.LastOrDefault()?.Close ?? 0;
+        var unrealizedPNL = (future.PositionSide == 1 ? 1 : -1) * (price - future.EntryPrice) * future.Size;
+        totalUnrealizedPNL += unrealizedPNL;
         sb.Append("<tr >");
         sb.Append($"<td>{future.Symbol}</td>");
         sb.Append($"<td>{future.PositionSide}</td>");
@@ -121,11 +127,12 @@ static async Task<IResult> GetFuturesImpl(string? symbol, bool? enable)
         sb.Append($"<td>{future.OrdersCount}</td>");
         sb.Append($"<td>{future.IsEnabled}</td>");
         sb.Append($"<td>{future.Status}</td>");
-        sb.Append($"<td>{(future.PositionSide == 1 ? 1 : -1) * (price - future.EntryPrice) * future.Size}</td>");
+        sb.Append($"<td>{unrealizedPNL}</td>");
         sb.Append($"<td>{future.PNL}</td>");
         sb.Append("</tr>");
     }
-    sb.Append($"<tr><td colspan='14' align='right'>Total Pnl:{futures?.Sum(x=>x.PNL)??0}</td></tr>");
+
+    sb.Append($"<tr><td colspan='10' align='right'>Total UnrealizedPNL:{totalUnrealizedPNL}</td><td colspan='4' align='right'>Total PNL:{futures?.Sum(x => x.PNL) ?? 0}</td></tr>");
     sb.Append("</table>");
     sb.Append("</body>");
     sb.Append("</html>");

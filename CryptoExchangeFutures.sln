@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.Sharding", "thirdLib
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.Sharding.SQLite", "thirdLibrary\EFCore.Sharding.SQLite\EFCore.Sharding.SQLite.csproj", "{4F5A94AB-F554-4C96-BFE7-0556426FF985}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CEF.Quotes", "CEF.Quotes\CEF.Quotes.csproj", "{E8E186B6-14AC-4D46-BEF3-43AFCA405239}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,6 +55,10 @@ Global
 		{4F5A94AB-F554-4C96-BFE7-0556426FF985}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4F5A94AB-F554-4C96-BFE7-0556426FF985}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4F5A94AB-F554-4C96-BFE7-0556426FF985}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E8E186B6-14AC-4D46-BEF3-43AFCA405239}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E8E186B6-14AC-4D46-BEF3-43AFCA405239}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E8E186B6-14AC-4D46-BEF3-43AFCA405239}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E8E186B6-14AC-4D46-BEF3-43AFCA405239}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

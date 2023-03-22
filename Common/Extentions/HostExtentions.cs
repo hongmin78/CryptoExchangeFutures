@@ -62,6 +62,7 @@ namespace CEF.Common.Extentions
             return hostBuilder.UseSerilog((hostingContext, serviceProvider, serilogConfig) =>
             {
                 var envConfig = hostingContext.Configuration;
+                var applicationName = envConfig["ApplicationName"];
                 LogOptions logConfig = new LogOptions();
                 envConfig.GetSection("log").Bind(logConfig);
 
@@ -115,7 +116,7 @@ namespace CEF.Common.Extentions
                 }
                 //自定义属性
                 serilogConfig.Enrich.WithProperty("MachineName", Environment.MachineName);
-                serilogConfig.Enrich.WithProperty("ApplicationName", Assembly.GetEntryAssembly().GetName().Name);
+                serilogConfig.Enrich.WithProperty("ApplicationName", applicationName);// Assembly.GetEntryAssembly().GetName().Name);
                 serilogConfig.Enrich.WithProperty("ApplicationVersion", Assembly.GetEntryAssembly().GetName().Version);
                 var httpContext = serviceProvider.GetService<IHttpContextAccessor>()?.HttpContext;
                 if (httpContext != null)

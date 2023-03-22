@@ -1,4 +1,5 @@
-﻿using CEF.Common.Exchange;
+﻿using CEF.Common.Entity;
+using CEF.Common.Exchange;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +17,6 @@ namespace CEF.Common.Context
 
         Task SyncAdlOrderAsync();
 
-        Task<List<IOhlcv>> GetKlineData(string symbol, PeriodOption period);
+        Task<List<Ohlcv>> GetKlineData(string symbol, PeriodOption period);
     }
 }
