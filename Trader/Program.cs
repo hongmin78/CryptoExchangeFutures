@@ -63,6 +63,7 @@ app.MapGet("/o/s", () => Results.Redirect($"/o/s/Filled/1/20"));
 app.MapGet("/o/s/{status}/{pageIndex:int}/{pageSize:int}", GetOrdersByStatus);
 app.MapGet("/o/ns", () => Results.Redirect($"/o/ns/Filled/1/20"));
 app.MapGet("/o/ns/{status}/{pageIndex:int}/{pageSize:int}", GetOrdersByNotStatus);
+app.MapGet("/o/cancel/{symbol}/{orderId:int}", CancelOrder);
 await app.RunAsync();
 
 static async Task<IResult> GetAllFutures()
@@ -210,19 +211,20 @@ static async Task<IResult> GetOrdersImpl(string? symbol = null, int? positionSid
     sb.Append("<body>");
     sb.Append("<table border='1px' cellpadding='7' cellspacing='1' bgcolor='lightyellow' style='font-family:Garamond; font-size:smaller'>");
     sb.Append("<tr style='font-weight: bold'>");
-    sb.Append($"<td align='center'>OrderId</td>");
-    sb.Append($"<td align='center'>Symbol</td>");
-    sb.Append($"<td align='center'>PositionSide</td>");
-    sb.Append($"<td align='center'>OrderSide</td>");
-    sb.Append($"<td align='center'>Side</td>");   
-    sb.Append($"<td align='center'>Size</td>");
-    sb.Append($"<td align='center'>FilledSize</td>");
-    sb.Append($"<td align='center'>AvgPrice</td>");
-    sb.Append($"<td align='center'>OrderType</td>"); 
-    sb.Append($"<td align='center'>Status</td>"); 
-    sb.Append($"<td align='center'>CreateTime</td>");
-    sb.Append($"<td align='center'>UpdateTime</td>");
-    sb.Append($"<td align='center'>PNL</td>");
+    sb.Append("<td align='center'>OrderId</td>");
+    sb.Append("<td align='center'>Symbol</td>");
+    sb.Append("<td align='center'>PositionSide</td>");
+    sb.Append("<td align='center'>OrderSide</td>");
+    sb.Append("<td align='center'>Side</td>");   
+    sb.Append("<td align='center'>Size</td>");
+    sb.Append("<td align='center'>FilledSize</td>");
+    sb.Append("<td align='center'>AvgPrice</td>");
+    sb.Append("<td align='center'>OrderType</td>"); 
+    sb.Append("<td align='center'>Status</td>"); 
+    sb.Append("<td align='center'>CreateTime</td>");
+    sb.Append("<td align='center'>UpdateTime</td>");
+    sb.Append("<td align='center'>PNL</td>");
+    sb.Append("<td align='center'>&nbsp;</td>"); 
     sb.Append("</tr>");
     foreach (var order in orders)
     {
@@ -236,14 +238,26 @@ static async Task<IResult> GetOrdersImpl(string? symbol = null, int? positionSid
         sb.Append($"<td>{order.FilledQuantity}</td>");
         sb.Append($"<td>{order.AvgPrice}</td>");
         sb.Append($"<td>{order.Type}</td>");
-        sb.Append($"<td>{order.Status}</td>"); 
+        sb.Append($"<td>{order.Status}</td>");
         sb.Append($"<td>{order.CreateTime}</td>");
         sb.Append($"<td>{order.UpdateTime}</td>");
         sb.Append($"<td>{order.PNL}</td>");
+        if (order.Status == "New" || order.Status == "PartiallyFilled")
+            sb.Append($"<td align='center'> <a href='/o/cancel/{order.Symbol}/{long.Parse(order.ClientOrderId)}'>cancel</a></td>");
+        else
+            sb.Append("<td align='center'>&nbsp;</td>");
         sb.Append("</tr>");
     }
     sb.Append("</table>");
     sb.Append("</body>");
     sb.Append("</html>");
     return Results.Extensions.Html(sb.ToString());
+}
+
+static async Task<bool> CancelOrder(string symbol, long orderId)
+{
+    using var scope = GlobalConfigure.ServiceLocatorInstance.CreateScope(); 
+    var exchange = scope.ServiceProvider.GetService<IExchange>();
+    var orderResult = await exchange.CancelOrderAsync(symbol, orderId);
+    return orderResult?.Success??false;
 }

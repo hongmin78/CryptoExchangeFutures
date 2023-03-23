@@ -343,7 +343,7 @@ namespace CEF.Common.Context
                     else
                         this._logger.LogError($"错误的合约配置状态{order.Id}/{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
                 }
-                else if (order.Status == OrderStatus.Expired)
+                else if (order.Status == OrderStatus.Expired || order.Status == OrderStatus.Canceled)
                 {
                     dbOrder.FilledQuantity = order.LastFilledQuantity;
                     await dbAccessor.UpdateAsync(dbOrder, new List<string>() { "FilledQuantity" });
@@ -399,7 +399,7 @@ namespace CEF.Common.Context
                     }
                     else
                         this._logger.LogError($"错误的合约配置状态{order.Id}/{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
-                }
+                } 
                 else if (order.Status != OrderStatus.PartiallyFilled && order.Status != OrderStatus.New)
                 {
                     this._logger.LogError($"定单状态异常. orderId:{order.Id}");
