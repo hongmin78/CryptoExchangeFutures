@@ -224,7 +224,7 @@ static async Task<IResult> GetOrdersImpl(string? symbol = null, int? positionSid
     sb.Append("<td align='center'>CreateTime</td>");
     sb.Append("<td align='center'>UpdateTime</td>");
     sb.Append("<td align='center'>PNL</td>");
-    sb.Append("<td align='center'>&nbsp;</td>"); 
+    sb.Append("<td align='center'>Function</td>"); 
     sb.Append("</tr>");
     foreach (var order in orders)
     {
