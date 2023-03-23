@@ -30,14 +30,14 @@ var app = builder.Build();
 app.Urls.Add(app.Configuration["QuotesBaseUrl"]);
 //app.Urls.Add("http://*");
 app.MapGet("/orders", GetFutureOrders);
-app.MapGet("/{symbol}/{period:int}", GetKlineData);
+app.MapGet("/", GetKlineData);
 await app.RunAsync();
   
-static async Task<List<Ohlcv>> GetKlineData(string symbol, PeriodOption period)
+static async Task<Dictionary<string, List<Ohlcv>>> GetKlineData()
 {
     using var scope = GlobalConfigure.ServiceLocatorInstance.CreateScope(); 
     var context = scope.ServiceProvider.GetService<IQuotesContext>();
-    return await context.GetKlineData(symbol, period);
+    return await context.GetAllKlineData();
 }
 
 static IEnumerable<FutureOrder> GetFutureOrders()

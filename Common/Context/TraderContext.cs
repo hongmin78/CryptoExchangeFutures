@@ -59,6 +59,7 @@ namespace CEF.Common.Context
                 try
                 {
                     var futures = await this.GetFuturesAsync();
+                    var allKlineData = await this.GetAllKlineData(true);
                     //await Parallel.ForEachAsync(symbols, async (symbol, cancellationToken) =>
                     foreach (var future in futures)
                     {
@@ -70,13 +71,19 @@ namespace CEF.Common.Context
                             continue;
                         }
                         if (future.Status != FutureStatus.None)
-                            continue;                       
+                            continue;
+                        var per15MinuteMemoryKey = string.Format(klineDataMemoryKey, symbol, (int)PeriodOption.Per15Minute);
+                        var fourHourlyMemoryKey = string.Format(klineDataMemoryKey, symbol, (int)PeriodOption.FourHourly);
+                        if (!allKlineData.ContainsKey(per15MinuteMemoryKey)) continue;
+                        if (!allKlineData.ContainsKey(fourHourlyMemoryKey)) continue;
+                        //var per15MinuteKlines = await this.GetKlineData(symbol, PeriodOption.Per15Minute);
+                        //var fourHourlyKlines = await this.GetKlineData(symbol, PeriodOption.FourHourly);
+                        var per15MinuteKlines = allKlineData[per15MinuteMemoryKey];
+                        var fourHourlyKlines = allKlineData[fourHourlyMemoryKey]; 
+                        if (!(per15MinuteKlines?.Any() ?? false)) continue;
                         foreach (var strategy in this._strategyList)
                         { 
-                            if((int)strategy.Side != future.PositionSide) continue;
-                            var per15MinuteKlines = await this.GetKlineData(symbol, PeriodOption.Per15Minute);
-                            var fourHourlyKlines = await this.GetKlineData(symbol, PeriodOption.FourHourly);
-                            if (!(per15MinuteKlines?.Any() ?? false)) continue;
+                            if((int)strategy.Side != future.PositionSide) continue; 
                             var per15MinuteKlineIC = IndexedObjectConstructor(per15MinuteKlines, per15MinuteKlines.Count() - 1);
                             var fourHourlyKlinesIC = IndexedObjectConstructor(fourHourlyKlines, fourHourlyKlines.Count() - 1);
                             await strategy.ExecuteAsync(
@@ -156,9 +163,31 @@ namespace CEF.Common.Context
 
         public async Task<List<Ohlcv>> GetKlineData(string symbol, PeriodOption period)
         {
-            var baseUrl = this._configuration["QuotesBaseUrl"]; 
-            var result = await RestSharpHttpHelper.RestActionAsync(baseUrl, $"/{symbol}/{(int)period}");
-            return result.ToObject<List<Ohlcv>>();
+            var result = await this.GetAllKlineData();
+            var memoryKey = string.Format(klineDataMemoryKey, symbol, (int)period);
+            if (result.ContainsKey(memoryKey))
+                return result[memoryKey];
+            else
+                return new List<Ohlcv>();
+        }
+
+        public async Task<Dictionary<string, List<Ohlcv>>> GetAllKlineData(bool isRealTime = false)
+        {
+            var baseUrl = this._configuration["QuotesBaseUrl"];
+            if (isRealTime)
+            {
+                var result = await RestSharpHttpHelper.RestActionAsync(baseUrl, string.Empty);
+                return result.ToObject<Dictionary<string, List<Ohlcv>>>();
+            }
+            else
+            {
+                var result = await this._memoryCache.GetOrSetObjectAsync<Dictionary<string, List<Ohlcv>>>(futuresMemoryKey, async () =>
+                {
+                    var result = await RestSharpHttpHelper.RestActionAsync(baseUrl, string.Empty);
+                    return result.ToObject<Dictionary<string, List<Ohlcv>>>();
+                }, new MemoryCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(3) });
+                return result;
+            }
         }
 
         async Task<IEnumerable<FutureOrder>> GetFutureOrders()

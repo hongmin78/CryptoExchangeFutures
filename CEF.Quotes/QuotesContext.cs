@@ -10,6 +10,10 @@ using Trady.Core.Infrastructure;
 using CEF.Common.Extentions;
 using Trady.Core;
 using CEF.Common.Entity;
+using System.IO.MemoryMappedFiles;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.IO.Pipes;
 
 namespace CEF.Quotes
 {
@@ -28,12 +32,12 @@ namespace CEF.Quotes
                             IConfiguration configuration,
                             IMemoryCache memoryCache)
         {
-            _serviceProvider = serviceProvider;          
+            _serviceProvider = serviceProvider;
             _logger = logger;
             _exchange = exchange;
             _memoryCache = memoryCache;
             this._configuration = configuration;
-            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; }; 
+            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
         }
 
         public async Task Subscribe()
@@ -126,9 +130,9 @@ namespace CEF.Quotes
                     this._logger.LogError(e, e.Message);
                 }
             });
-        } 
+        }
 
-        public async Task<List<Ohlcv>> GetKlineData(string symbol, PeriodOption period)
+        async Task<List<Ohlcv>> GetKlineData(string symbol, PeriodOption period)
         {
             var symbols = this.GetSymbols();
             if (!symbols.Contains(symbol)) return new List<Ohlcv>();
@@ -139,7 +143,7 @@ namespace CEF.Quotes
                 if (callResult.Success)
                 {
                     //await Task.Delay(1000);
-                    return callResult.Data.Select(x=>new Ohlcv() { Close = x.Close, High = x.High, Low = x.Low, Open = x.Open, Volume = x.Volume, DateTime = x.DateTime }).ToList();
+                    return callResult.Data.Select(x => new Ohlcv() { Close = x.Close, High = x.High, Low = x.Low, Open = x.Open, Volume = x.Volume, DateTime = x.DateTime }).ToList();
                 }
                 else
                 {
@@ -154,12 +158,29 @@ namespace CEF.Quotes
         {
             return this.FutureOrders;
         }
+
+        public async Task<Dictionary<string, List<Ohlcv>>> GetAllKlineData()
+        {
+            var result = new Dictionary<string, List<Ohlcv>>();
+            var symbols = this.GetSymbols();
+            var periods = new List<PeriodOption>() { PeriodOption.Per15Minute, PeriodOption.FourHourly };
+            foreach (var symbol in symbols)
+            {
+                foreach (var period in periods)
+                {
+                    var memoryKey = string.Format(klineDataMemoryKey, symbol, (int)period);
+                    var ohlcvs = await this.GetKlineData(symbol, period);
+                    result.Add(memoryKey, ohlcvs);
+                }
+            }
+            return result;
+        }
     }
 
     public interface IQuotesContext 
     {
         Task Subscribe();
-        Task<List<Ohlcv>> GetKlineData(string symbol, PeriodOption period);
+        Task<Dictionary<string, List<Ohlcv>>> GetAllKlineData();
         IEnumerable<FutureOrder> GetFutureOrders();
     }
 }

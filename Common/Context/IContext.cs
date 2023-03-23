@@ -18,5 +18,6 @@ namespace CEF.Common.Context
         Task SyncAdlOrderAsync();
 
         Task<List<Ohlcv>> GetKlineData(string symbol, PeriodOption period);
+        Task<Dictionary<string, List<Ohlcv>>> GetAllKlineData(bool isRealTime = false);
     }
 }
