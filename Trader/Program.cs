@@ -111,7 +111,7 @@ static async Task<IResult> GetFuturesImpl(string? symbol, bool? enable)
     var allKlineData = await context.GetAllKlineData();
     foreach (var future in futures)
     {
-        var per15MinuteMemoryKey = string.Format("GetKlineDataAsync_{0}_{1}", symbol, (int)PeriodOption.Per15Minute); 
+        var per15MinuteMemoryKey = string.Format("GetKlineDataAsync_{0}_{1}", future.Symbol, (int)PeriodOption.Per15Minute); 
         var klines = allKlineData.ContainsKey(per15MinuteMemoryKey) ? allKlineData[per15MinuteMemoryKey] : new List<Ohlcv>(); 
         var price = klines.LastOrDefault()?.Close ?? 0;
         var unrealizedPNL = (future.PositionSide == 1 ? 1 : -1) * (price - future.EntryPrice) * future.Size;
