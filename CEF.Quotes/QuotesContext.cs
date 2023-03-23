@@ -121,7 +121,7 @@ namespace CEF.Quotes
                         currentKLine.Open = kline.OpenPrice;
                         currentKLine.Volume = kline.Volume;
                     }
-                    if (klines.Count > 100)
+                    if (klines.Count > 20)
                         klines.RemoveAt(0);
                     this._memoryCache.Set(memoryKey, klines);
                 }
