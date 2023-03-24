@@ -218,6 +218,7 @@ static async Task<IResult> GetOrdersImpl(string? symbol = null, int? positionSid
     sb.Append("<td align='center'>Side</td>");   
     sb.Append("<td align='center'>Size</td>");
     sb.Append("<td align='center'>FilledSize</td>");
+    sb.Append("<td align='center'>Price</td>");
     sb.Append("<td align='center'>AvgPrice</td>");
     sb.Append("<td align='center'>OrderType</td>"); 
     sb.Append("<td align='center'>Status</td>"); 
@@ -236,6 +237,7 @@ static async Task<IResult> GetOrdersImpl(string? symbol = null, int? positionSid
         sb.Append($"<td>{order.Side}</td>");
         sb.Append($"<td>{order.Quantity}</td>");
         sb.Append($"<td>{order.FilledQuantity}</td>");
+        sb.Append($"<td>{order.Price}</td>");
         sb.Append($"<td>{order.AvgPrice}</td>");
         sb.Append($"<td>{order.Type}</td>");
         sb.Append($"<td>{order.Status}</td>");

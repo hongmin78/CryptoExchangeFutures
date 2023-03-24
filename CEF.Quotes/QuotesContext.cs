@@ -78,14 +78,15 @@ namespace CEF.Quotes
                 {
                     try
                     {
-                        if (order.Status == OrderStatus.Filled)
+                        var index = this.FutureOrders.FindIndex(x => x.Id == order.Id);
+                        if (index != -1)
+                            this.FutureOrders.RemoveAt(index);
+
+                        this.FutureOrders.Add(order);
+                        for (int i = this.FutureOrders.Count - 1; i >= 0; i--)
                         {
-                            this.FutureOrders.Add(order);
-                            for (int i = this.FutureOrders.Count - 1; i >= 0; i--)
-                            {
-                                if (DateTime.Now.Subtract(this.FutureOrders[i].UpdateTime).TotalMinutes > 1)
-                                    this.FutureOrders.RemoveAt(i);
-                            }
+                            if (DateTime.Now.Subtract(this.FutureOrders[i].UpdateTime).TotalMinutes > 1)
+                                this.FutureOrders.RemoveAt(i);
                         }
                     }
                     catch (Exception e)

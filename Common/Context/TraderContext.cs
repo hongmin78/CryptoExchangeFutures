@@ -242,9 +242,7 @@ namespace CEF.Common.Context
             var futures = await this.GetFuturesAsync();
             var dbOrders = await dbAccessor.GetIQueryable<Entity.Order>().Where(x => x.Status != OrderStatus.Filled.GetDescription() && x.Status != OrderStatus.Invalid.GetDescription() && x.Status != OrderStatus.Expired.GetDescription()).ToListAsync();
             foreach (var dbOrder in dbOrders)
-            {
-                //if (DateTime.Now.Subtract(DateTime.Parse(dbOrder.CreateTime.Remove(dbOrder.CreateTime.Length - 4))).TotalSeconds < 5)
-                //    continue;
+            { 
                 var order = futureOrders?.FirstOrDefault(x=>x.Symbol == dbOrder.Symbol && x.Id == long.Parse(dbOrder.ClientOrderId));
                 if (order == null)
                 {
@@ -276,7 +274,18 @@ namespace CEF.Common.Context
                     }
                     order = orderResult.Data;
                 }
-                if (order.Status == OrderStatus.New) continue;
+                if (order.Status == OrderStatus.New || order.Status == OrderStatus.PartiallyFilled)
+                {
+                    if (DateTime.Now.Subtract(DateTime.Parse(dbOrder.CreateTime.Remove(dbOrder.CreateTime.Length - 4))).TotalSeconds > 100)
+                    {
+                        var cancelOrderResult = await this._exchange.CancelOrderAsync(order.Symbol, order.Id);
+                        this._logger.LogWarning($"pending order timed out, execute order cancellation. detail:{order.ClientOrderId}/{order.Symbol}/{order.Type.GetDescription()}/{order.Price}.");
+                        if (!cancelOrderResult.Success)
+                            this._logger.LogError(cancelOrderResult.Msg);
+                        continue;
+                    }
+                    continue;
+                }
 
                 dbOrder.UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff");
                 dbOrder.Status = order.Status.GetDescription();
@@ -311,7 +320,7 @@ namespace CEF.Common.Context
                                 "OrdersCount",
                                 "Status",
                                 "UpdateTime" });
-                        this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide == 1 ? "Long" : "Short")}] Open Position. safety order [{future.OrdersCount - 1}/{future.MaxSafetyOrdersCount}]. Price:{order.AvgPrice}, Size:{order.AvgPrice * order.Quantity} USDT.");
+                        this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide == 1 ? "Long" : "Short")}] Open Position. safety order [{future.OrdersCount - 1}/{future.MaxSafetyOrdersCount}]. Size:{order.Quantity}, Price/Value:{order.AvgPrice}/{order.AvgPrice * order.Quantity} USDT.");
                     }
                     else if (future.Status == FutureStatus.Closing)
                     {
@@ -338,7 +347,7 @@ namespace CEF.Common.Context
                                 "OrdersCount",
                                 "Status",
                                 "UpdateTime" });
-                        this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide == 1 ? "Long" : "Short")}] Close Position. Entry Price:{entryPrice}, Close Price:{avgPrice}, PNL:{dbOrder.PNL ?? 0} USDT.");
+                        this._logger.LogWarning($"[{future.Symbol} {(future.PositionSide == 1 ? "Long" : "Short")}] Close Position. Size:{order.Quantity}, EntryPrice/ClosePrice:{entryPrice}/{avgPrice}, PNL/Value:{dbOrder.PNL ?? 0}/{order.AvgPrice * order.Quantity} USDT.");
                     }
                     else
                         this._logger.LogError($"错误的合约配置状态{order.Id}/{order.Symbol}/{order.PositionSide.GetDescription()}/{future.Status.GetDescription()}");
