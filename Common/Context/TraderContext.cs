@@ -240,7 +240,7 @@ namespace CEF.Common.Context
             using var scope = this._serviceProvider.CreateScope();
             using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
             var futures = await this.GetFuturesAsync();
-            var dbOrders = await dbAccessor.GetIQueryable<Entity.Order>().Where(x => x.Status != OrderStatus.Filled.GetDescription() && x.Status != OrderStatus.Invalid.GetDescription() && x.Status != OrderStatus.Expired.GetDescription()).ToListAsync();
+            var dbOrders = await dbAccessor.GetIQueryable<Entity.Order>().Where(x => x.Status != OrderStatus.Filled.GetDescription() && x.Status != OrderStatus.Invalid.GetDescription() && x.Status != OrderStatus.Expired.GetDescription() && x.Status != OrderStatus.Canceled.GetDescription()).ToListAsync();
             foreach (var dbOrder in dbOrders)
             { 
                 var order = futureOrders?.FirstOrDefault(x=>x.Symbol == dbOrder.Symbol && x.Id == long.Parse(dbOrder.ClientOrderId));
