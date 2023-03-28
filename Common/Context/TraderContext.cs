@@ -74,8 +74,8 @@ namespace CEF.Common.Context
                             continue;
                         var per15MinuteMemoryKey = string.Format(klineDataMemoryKey, symbol, (int)PeriodOption.Per15Minute);
                         var fourHourlyMemoryKey = string.Format(klineDataMemoryKey, symbol, (int)PeriodOption.FourHourly);
-                        if (!allKlineData.ContainsKey(per15MinuteMemoryKey)) continue;
-                        if (!allKlineData.ContainsKey(fourHourlyMemoryKey)) continue;
+                        if (!(allKlineData?.ContainsKey(per15MinuteMemoryKey)??false)) continue;
+                        if (!(allKlineData?.ContainsKey(fourHourlyMemoryKey)??false)) continue;
                         //var per15MinuteKlines = await this.GetKlineData(symbol, PeriodOption.Per15Minute);
                         //var fourHourlyKlines = await this.GetKlineData(symbol, PeriodOption.FourHourly);
                         var per15MinuteKlines = allKlineData[per15MinuteMemoryKey];
