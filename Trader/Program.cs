@@ -281,7 +281,7 @@ static async Task<IResult> GetDailyReport()
     sb.Append("<table border='1px' cellpadding='7' cellspacing='1' bgcolor='lightyellow' style='font-family:Garamond; font-size:smaller'>");
     sb.Append("<tr style='font-weight: bold'>");
     sb.Append("<td align='center'>Date</td>");
-    sb.Append("<td align='center'>PNL</td>");   
+    sb.Append("<td align='center'>Sum PNL</td>");   
     sb.Append("</tr>");
     foreach (var item in result)
     {
