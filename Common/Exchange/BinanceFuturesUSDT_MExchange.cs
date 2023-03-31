@@ -890,5 +890,10 @@ namespace CEF.Common.Exchange
             }
             return new CallResult() { Success = result.Success, ErrorCode = result.Error?.Code, Msg = result.Error?.Message };
         }
+
+        public async Task UnsubscribeAllAsync()
+        {
+            await this.Ws.UnsubscribeAllAsync();
+        }
     }
 }

@@ -223,7 +223,7 @@ namespace CEF.Common.Context
                 var futures = await dbAccessor.GetIQueryable<Future>().ToListAsync();
                 return futures;
             }, new MemoryCacheEntryOptions() { SlidingExpiration = TimeSpan.FromDays(30) });
-            return result;
+            return result.OrderBy(x=>Guid.NewGuid()).ToList();
         }
 
         async Task UpdateFutureAsync(Future future, List<string> properties)

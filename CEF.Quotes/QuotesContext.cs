@@ -14,6 +14,9 @@ using System.IO.MemoryMappedFiles;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.IO.Pipes;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using Microsoft.CodeAnalysis.Text;
 
 namespace CEF.Quotes
 {
@@ -98,6 +101,7 @@ namespace CEF.Quotes
 
         async Task SubscribeToKlineUpdatesAsync(IEnumerable<string> symbols)
         {
+            if (!symbols.Any()) return;
             var periods = new List<PeriodOption>() { PeriodOption.Per15Minute, PeriodOption.FourHourly };
             await this._exchange.SubscribeToKlineUpdatesAsync(symbols, periods, async kline =>
             {
@@ -155,6 +159,12 @@ namespace CEF.Quotes
             return result;
         }
 
+        void RemoveKlineData(string symbol, PeriodOption period)
+        {
+            var memoryKey = string.Format(klineDataMemoryKey, symbol, (int)period);
+            this._memoryCache.Remove(memoryKey);
+        }
+
         public IEnumerable<FutureOrder> GetFutureOrders()
         {
             return this.FutureOrders;
@@ -176,6 +186,63 @@ namespace CEF.Quotes
             }
             return result;
         }
+
+        public async Task<string> Add(string symbol) 
+        {
+            var symbols = this._configuration["Symbols"].ToString().Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+            if (symbols.Contains(symbol))
+                return $"the {symbol} already exists.";
+            var supportedSymbols = await this._exchange.GetSymbolsAsync();
+            if (!supportedSymbols.Success)
+                return $"exchange get symbols error. detail:{supportedSymbols.Msg}";
+            if (!(supportedSymbols.Data?.Any(x => x.Name == symbol) ?? false))
+                return $"Trading pairs {symbol} are not supported";
+            symbols.Add(symbol);
+            WriteToAppsettings(string.Join(",", symbols));
+            await UnSubscribeAll();
+            await GetKlineData(symbol, PeriodOption.Per15Minute);
+            await GetKlineData(symbol, PeriodOption.FourHourly);
+            await SubscribeToKlineUpdatesAsync(symbols);
+            await SubscribeToUserDataUpdatesAsync();
+            return await Task.FromResult("ok");
+        }
+
+        private async Task UnSubscribeAll()
+        {
+            await this._exchange.UnsubscribeAllAsync();
+        }
+
+        public async Task<string> Remove(string symbol)
+        {
+            var symbols = this._configuration["Symbols"].ToString().Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+            if (!symbols.Contains(symbol))
+                return $"the {symbol} not exists.";
+            symbols.Remove(symbol);
+            WriteToAppsettings(string.Join(",", symbols));
+            await UnSubscribeAll();
+            RemoveKlineData(symbol, PeriodOption.Per15Minute);
+            RemoveKlineData(symbol, PeriodOption.FourHourly);
+            await SubscribeToKlineUpdatesAsync(symbols);
+            await SubscribeToUserDataUpdatesAsync();
+            return await Task.FromResult("ok");
+        }
+
+        void WriteToAppsettings(string value)
+        {
+            string filePath = $"{System.AppDomain.CurrentDomain.BaseDirectory}/appsettings.json";
+            JObject jsonObject;
+            using (StreamReader file = new StreamReader(filePath))
+            using (JsonTextReader reader = new JsonTextReader(file))
+            {
+                jsonObject = (JObject)JToken.ReadFrom(reader);
+                jsonObject["Symbols"] = value;
+            }
+            using (var writer = new StreamWriter(filePath))
+            using (JsonTextWriter jsonwriter = new JsonTextWriter(writer))
+            {
+                jsonObject.WriteTo(jsonwriter);
+            }
+        }
     }
 
     public interface IQuotesContext 
@@ -183,5 +250,9 @@ namespace CEF.Quotes
         Task Subscribe();
         Task<Dictionary<string, List<Ohlcv>>> GetAllKlineData();
         IEnumerable<FutureOrder> GetFutureOrders();
+
+        Task<string> Add(string symbol);
+
+        Task<string> Remove(string symbol);
     }
 }

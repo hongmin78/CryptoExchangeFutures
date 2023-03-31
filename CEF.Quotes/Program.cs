@@ -1,13 +1,11 @@
-using CEF.Common.Context;
 using CEF.Common.Entity;
 using CEF.Common.Exchange;
 using CEF.Common.Extentions;
 using CEF.Common.Primitives;
 using CEF.Quotes;
-using CryptoExchange.Net.CommonObjects;
-using EFCore.Sharding;
-using Microsoft.Extensions.Caching.Memory;
-using Trady.Core.Infrastructure;
+using Microsoft.CodeAnalysis;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 var builder = WebApplication.CreateBuilder(args);//Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder(args)
 builder.Host.ConfigureAppConfiguration(config =>
@@ -28,9 +26,11 @@ builder.Host.ConfigureAppConfiguration(config =>
 });
 var app = builder.Build();
 app.Urls.Add(app.Configuration["QuotesBaseUrl"]);
-//app.Urls.Add("http://*");
 app.MapGet("/orders", GetFutureOrders);
-app.MapGet("/", GetKlineData);
+app.MapGet("/", GetKlineData); 
+app.MapGet("/symbols", GetSymbols);
+app.MapGet("/add/{symbol}", Add);
+app.MapGet("/remove/{symbol}", Remove);
 await app.RunAsync();
   
 static async Task<Dictionary<string, List<Ohlcv>>> GetKlineData()
@@ -46,3 +46,27 @@ static IEnumerable<FutureOrder> GetFutureOrders()
     var context = scope.ServiceProvider.GetService<IQuotesContext>();
     return context.GetFutureOrders();
 }
+
+static async Task<string> GetSymbols()
+{
+    using var scope = GlobalConfigure.ServiceLocatorInstance.CreateScope();
+    var configuration = scope.ServiceProvider.GetService<IConfiguration>();
+    return configuration["Symbols"].ToString();
+}
+
+static async Task<string> Add(string symbol)
+{
+    symbol = symbol.ToUpper().Trim();
+    using var scope = GlobalConfigure.ServiceLocatorInstance.CreateScope(); 
+    var quotesContext = scope.ServiceProvider.GetService<IQuotesContext>();
+    return await quotesContext.Add(symbol); 
+}
+
+static async Task<string> Remove(string symbol)
+{
+    symbol = symbol.ToUpper().Trim();
+    using var scope = GlobalConfigure.ServiceLocatorInstance.CreateScope();
+    var quotesContext = scope.ServiceProvider.GetService<IQuotesContext>();
+    return await quotesContext.Remove(symbol);
+}
+
