@@ -19,5 +19,8 @@ namespace CEF.Common.Context
 
         Task<List<Ohlcv>> GetKlineData(string symbol, PeriodOption period);
         Task<Dictionary<string, List<Ohlcv>>> GetAllKlineData(bool isRealTime = false);
+        Task UpdateFutureAsync(Future future, List<string> properties);
+
+        Task CreateFutureAsync(Future future);
     }
 }

@@ -1,22 +1,15 @@
-﻿using Binance.Net.Enums;
-using CEF.Common.Context;
+﻿using CEF.Common.Context;
 using CEF.Common.Entity;
 using CEF.Common.Exchange;
 using CEF.Common.Extentions;
 using CEF.Common.Primitives;
-using CryptoExchange.Net.CommonObjects;
-using Dynamitey;
+using Coldairarrow.Util;
 using EFCore.Sharding;
-using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using System.Data;
-using System.Drawing.Printing;
 using System.Text;
-using Trady.Analysis.Indicator;
 
 var builder = WebApplication.CreateBuilder(args);//Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder(args)
 builder.Host.ConfigureAppConfiguration(config =>
@@ -68,7 +61,69 @@ app.MapGet("/o/ns", () => Results.Redirect($"/o/ns/Filled/1/20"));
 app.MapGet("/o/ns/{status}/{pageIndex:int}/{pageSize:int}", GetOrdersByNotStatus);
 app.MapGet("/o/cancel/{symbol}/{orderId:int}", CancelOrder);
 app.MapGet("/o/g", GetDailyReport);
+app.MapGet("/get/{symbol}/{positionSide:int}", GetFutureDetail);
+app.MapGet("/set/{id:long}/{isEnabled:int}", SetFutureEnable);
+app.MapPost("/add", AddFuture);
+app.MapPost("/update", UpdateFuture); 
 await app.RunAsync();
+
+static async Task<string> AddFuture([FromBody] Future future)
+{
+    using var scope = GlobalConfigure.ServiceLocatorInstance.CreateScope();
+    var context = scope.ServiceProvider.GetService<IContext>();
+    var entity = new Future()
+    {
+        Symbol = future.Symbol.ToUpper(),
+        Id = IdHelper.GetLongId(),
+        UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff"),
+        AbleSize = 0,
+        BaseOrderSize = future.BaseOrderSize,
+        EntryPrice = 0,
+        LastTransactionOpenPrice = 0,
+        LastTransactionOpenSize = 0,
+        MaxSafetyOrdersCount = future.MaxSafetyOrdersCount,
+        OrdersCount = 0,
+        PositionSide = future.PositionSide,
+        Size = 0,
+        TargetProfit = future.TargetProfit,
+        SafetyOrderSize = future.SafetyOrderSize,
+        SafetyOrderPriceDeviation = future.SafetyOrderPriceDeviation,
+        SafetyOrderPriceScale = future.SafetyOrderPriceScale,
+        SafetyOrderVolumeScale = future.SafetyOrderVolumeScale,
+        IsEnabled = future.IsEnabled,
+        Status = future.Status,
+        PNL = 0
+    };
+    await context.CreateFutureAsync(entity);
+    return "ok";
+}
+
+static async Task<string> UpdateFuture([FromBody] Future future)
+{
+    using var scope = GlobalConfigure.ServiceLocatorInstance.CreateScope(); 
+    var context = scope.ServiceProvider.GetService<IContext>(); 
+    await context.UpdateFutureAsync(future, new List<string>() { "BaseOrderSize", "TargetProfit", "SafetyOrderSize", "MaxSafetyOrdersCount", "SafetyOrderVolumeScale", "SafetyOrderPriceScale", "SafetyOrderPriceDeviation", "IsEnabled" });
+    return "ok";
+}
+
+static async Task<string> GetFutureDetail(string symbol, int positionSide)
+{
+    using var scope = GlobalConfigure.ServiceLocatorInstance.CreateScope();
+    using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>(); 
+    var future = await dbAccessor.GetIQueryable<Future>().Where(x=>x.Symbol == symbol && x.PositionSide == positionSide).FirstOrDefaultAsync();
+    return future.ToJson();
+}
+
+static async Task<string> SetFutureEnable(long id, int isEnabled)
+{
+    using var scope = GlobalConfigure.ServiceLocatorInstance.CreateScope();
+    using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
+    var context = scope.ServiceProvider.GetService<IContext>();
+    var future = await dbAccessor.GetIQueryable<Future>().Where(x => x.Id == id).FirstOrDefaultAsync();
+    future.IsEnabled = isEnabled;
+    await context.UpdateFutureAsync(future, new List<string>() { "IsEnabled" });
+    return "ok";
+}
 
 static async Task<IResult> GetAllFutures()
 {
@@ -79,6 +134,7 @@ static async Task<IResult> GetFutures(string? symbol)
 {
     return await GetFuturesImpl(symbol, true);
 }
+
 static async Task<IResult> GetFuturesImpl(string? symbol, bool? enable)
 {
     var sb = new StringBuilder();

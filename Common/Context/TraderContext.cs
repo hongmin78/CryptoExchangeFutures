@@ -3,8 +3,7 @@ using CEF.Common.Exchange;
 using CEF.Common.Extentions;
 using CEF.Common.Helper;
 using CEF.Common.Strategy;
-using CEF.Common.Trader;
-using Coldairarrow.Util;
+using CEF.Common.Trader; 
 using EFCore.Sharding;
 using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
@@ -12,12 +11,8 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Net;
-using System.Net.NetworkInformation;
-using System.Threading.Tasks.Dataflow;
-using Trady.Core;
-using Trady.Core.Infrastructure;
-using static System.Formats.Asn1.AsnWriter;
+using System.Net; 
+using Trady.Core.Infrastructure; 
 
 namespace CEF.Common.Context
 {
@@ -131,34 +126,20 @@ namespace CEF.Common.Context
             }
         }
 
-        private async Task<Future> CreateFutureAsync(string symbol, PositionSide side)
+        public async Task CreateFutureAsync(Future future)
         {
             using var scope = this._serviceProvider.CreateScope();
             using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
-            var entity = new Future()
-            {
-                Symbol = symbol,
-                Id = IdHelper.GetLongId(),
-                UpdateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss fff"),
-                AbleSize = 0,
-                BaseOrderSize = 100,
-                EntryPrice = 0,
-                LastTransactionOpenPrice = 0,
-                LastTransactionOpenSize = 0,
-                MaxSafetyOrdersCount = 3,
-                OrdersCount = 0,
-                PositionSide = (int)side,
-                Size = 0,
-                TargetProfit = 0.012m,
-                SafetyOrderSize = 300m,
-                SafetyOrderPriceDeviation = 0.018m,
-                SafetyOrderPriceScale = 2m,
-                SafetyOrderVolumeScale = 2m,
-                IsEnabled = 1
-            };
-            await dbAccessor.InsertAsync(entity);
+            var count = await dbAccessor.GetIQueryable<Future>().Where(x => x.Symbol == future.Symbol.ToUpper() && x.PositionSide == future.PositionSide).CountAsync();
+            if (count > 0)
+                throw new Exception($"{future.Symbol} {future.PositionSide} contract already exists.");
+            var supportedSymbols = await this._exchange.GetSymbolsAsync();
+            if (!supportedSymbols.Success)
+                throw new Exception($"exchange get symbols error. detail:{supportedSymbols.Msg}");
+            if (!(supportedSymbols.Data?.Any(x => x.Name == future.Symbol) ?? false))
+                throw new Exception($"trading pairs {future.Symbol} are not supported");
+            await dbAccessor.InsertAsync(future);
             this._memoryCache.Remove(futuresMemoryKey);
-            return entity;
         }
 
         public async Task<List<Ohlcv>> GetKlineData(string symbol, PeriodOption period)
@@ -226,7 +207,7 @@ namespace CEF.Common.Context
             return result.OrderBy(x=>Guid.NewGuid()).ToList();
         }
 
-        async Task UpdateFutureAsync(Future future, List<string> properties)
+        public async Task UpdateFutureAsync(Future future, List<string> properties)
         {
             using var scope = this._serviceProvider.CreateScope();
             using var dbAccessor = scope.ServiceProvider.GetService<IDbAccessor>();
