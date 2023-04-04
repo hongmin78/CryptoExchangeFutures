@@ -43,13 +43,15 @@ namespace CEF.Common.Strategy
                        per15MinuteIndexedOhlcv.Prev.Close > per15MinuteIndexedOhlcv.Prev.Open)
                         await openFunc?.Invoke(future.Symbol, OrderType.Limit, Side, future.SafetyOrderSize);
                     else if (((future.LastTransactionOpenPrice - per15MinuteIndexedOhlcv.Close) / future.LastTransactionOpenPrice) > 0.03m &&
-                        fourHourlyIndexedOhlcv.Prev.Close > fourHourlyIndexedOhlcv.Prev.Open)
+                        fourHourlyIndexedOhlcv.Prev.Close > fourHourlyIndexedOhlcv.Prev.Open && 
+                        per15MinuteIndexedOhlcv.Prev.Close > per15MinuteIndexedOhlcv.Prev.Open)
                         await openFunc?.Invoke(future.Symbol, OrderType.Limit, Side, future.SafetyOrderSize);
                 }
                 else if (future.OrdersCount < (future.MaxSafetyOrdersCount + 1))
                 {
                     if (((future.LastTransactionOpenPrice - per15MinuteIndexedOhlcv.Close) / future.LastTransactionOpenPrice) > (future.SafetyOrderPriceDeviation * future.SafetyOrderPriceScale *(future.OrdersCount - 1)) &&
-                       fourHourlyIndexedOhlcv.Prev.Close > fourHourlyIndexedOhlcv.Prev.Open)
+                       fourHourlyIndexedOhlcv.Prev.Close > fourHourlyIndexedOhlcv.Prev.Open && 
+                       per15MinuteIndexedOhlcv.Prev.Close > per15MinuteIndexedOhlcv.Prev.Open)
                         await openFunc?.Invoke(future.Symbol, OrderType.Limit, Side, future.SafetyOrderSize * future.SafetyOrderVolumeScale * (future.OrdersCount - 1));
                 }
             }
